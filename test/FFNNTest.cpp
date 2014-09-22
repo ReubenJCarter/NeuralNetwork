@@ -16,18 +16,20 @@ int main()
 	trainingOutput.Set(0, 0, 1);
 	trainingOutput.Set(0, 1, 0);
 	
-	ffnn.BackPropogate(trainingInput, trainingOutput, 1);
+	for(int i = 0; i < 100; i++)
+		ffnn.BackPropogate(trainingInput, trainingOutput, 5);
 	
 	//Test
-	Matd testInput(1, 1); 
+	Matd testInput(1, 2); 
 	Matd testOutput;
 	
 	testInput.Set(0, 0, 0);
+	testInput.Set(0, 1, 1);
 	testOutput = ffnn.ForwardUpdate(testInput);
-	//testOutput.Print();
-	testInput.Set(0, 0, 1);
-	testOutput = ffnn.ForwardUpdate(testInput);
-	//testOutput.Print();
+	printf("\n\ninput to nn:\n");
+	testInput.Print();
+	printf("\n\n\noutput from neural network after training:\n");
+	testOutput.Print();
 	
 	//ffnn.Print();
 	

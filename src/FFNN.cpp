@@ -81,48 +81,83 @@ void FFNN::Print()
 
 void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRate)
 {
-	printf("START BP\n\n");
+	#define PRINT_OUTPUT 0
+	
+	#if PRINT_OUTPUT == 1
+		printf("START BP\n\n");
+	#endif
+	
 	Matd* z;
 	Matd* a;
 	Matd* delta;
-	Matd y(fTrainingOutput.rows + 1, fTrainingOutput.cols);
 	
 	z = new Matd[layerNumber];
 	a = new Matd[layerNumber];
 	delta = new Matd[layerNumber]; 
-	y.Copy(fTrainingOutput, 0, 0);
-	y.SetRow(y.rows - 1, 1.0);
 	
 	//Feed forward, computing all the values of z and a
 	Matd aRun(fInput.rows + 1, fInput.cols);
 	aRun.Copy(fInput, 0, 0);
 	aRun.SetRow(aRun.rows - 1, 1.0);
 	
-	printf("first a:\n");
-	aRun.Print();
+	#if PRINT_OUTPUT == 1
+		printf("\nfirst a:\n");
+		aRun.Print();
+	#endif
 	
 	for(int i = 0; i < layerNumber; i++)
 	{
 		aRun = layer[i] * aRun;
 		z[i] = aRun;
-		printf("z layer %d:\n", i);
-		z[i].Print();
-		printf("weights layer %d:\n", i);
-		layer[i].Print();
 		aRun.ComponentFunction(Sigmiod);
 		aRun.SetRow(aRun.rows - 1, 1.0);
 		a[i] = aRun;
-		printf("a layer %d:\n", i);
-		a[i].Print();
+		
+		#if PRINT_OUTPUT == 1
+			printf("\nweights layer %d:\n", i);
+			layer[i].Print();
+			printf("\nz layer %d:\n", i);
+			z[i].Print();
+			printf("\na layer %d:\n", i);
+			a[i].Print();
+		#endif
 	}
 	
 	//Compute output error
+	Matd y(fTrainingOutput.rows + 1, fTrainingOutput.cols);
+	y.Copy(fTrainingOutput, 0, 0);
+	y.SetRow(y.rows - 1, 1.0);
+	
 	int L = layerNumber - 1;
 	z[L].ComponentFunction(GradientSigmiod);
-	z[L].SetRow(z[L].rows - 1, 1.0);
-	delta[L] = HadProd(a[L] - y, z[L]);
+	Matd outputDifference;
+	outputDifference = a[L] - y;
+	delta[L] = HadProd(outputDifference, z[L]);
+	
+	#if PRINT_OUTPUT == 1
+		printf("\ntraining output:\n");
+		y.Print();
+		printf("\noutput difference:\n");
+		outputDifference.Print();
+		printf("\nderivative activation function\n");
+		z[L].Print();
+		printf("\nneuron errors layer %d:\n", L);
+		delta[L].Print();
+	#endif
+	
 	//Gradient decent to adjust weights
-	layer[L] -= (delta[L] * Trans(a[L])) * (fLearningRate / fInput.cols);
+	aRun.Copy(fInput, 0, 0);//copy input back into aRun 
+	aRun.SetRow(aRun.rows - 1, 1.0);
+	if(L > 0)
+		layer[L] -= (delta[L] * Trans(a[L - 1])) * (fLearningRate / fInput.cols);
+	else
+		layer[L] -= (delta[L] * Trans(aRun)) * (fLearningRate / fInput.cols);
+		
+	#if PRINT_OUTPUT == 1
+		printf("\ngradient decented layer %d:\n", L);
+		layer[L].Print();
+	#endif
+	
 	//Back Propagate the error
 	for(int i = L - 1; i >= 0; i--)
 	{
@@ -130,8 +165,13 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 		z[i].SetRow(z[i].rows - 1, 1.0);
 		delta[i] = HadProd(MultTransA(layer[i + 1], delta[i + 1]), z[i]);
 		//Gradient decent to adjust weights
-		layer[i] -= (delta[i] * Trans(a[i])) * (fLearningRate / fInput.cols);
+		if(L > 0)
+			layer[L] -= (delta[L] * Trans(a[L - 1])) * (fLearningRate / fInput.cols);
+		else
+			layer[L] -= (delta[L] * Trans(aRun)) * (fLearningRate / fInput.cols);
 	}
 	
-	printf("END BP\n");
+	#if PRINT_OUTPUT == 1
+		printf("END BP\n");
+	#endif
 }
