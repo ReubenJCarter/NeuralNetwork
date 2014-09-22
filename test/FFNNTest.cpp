@@ -12,12 +12,12 @@ int main()
 	Matd trainingInput(1, 2);
 	Matd trainingOutput(1, 2);
 	trainingInput.Set(0, 0, 0);
-	trainingInput.Set(0, 1, 1);
+	trainingInput.Set(0, 1, 10);
 	trainingOutput.Set(0, 0, 1);
 	trainingOutput.Set(0, 1, 0);
 	
-	for(int i = 0; i < 100; i++)
-		ffnn.BackPropogate(trainingInput, trainingOutput, 5);
+	for(int i = 0; i < 1000; i++)
+		ffnn.BackPropogate(trainingInput, trainingOutput, 10);
 	
 	//Test
 	Matd testInput(1, 2); 
