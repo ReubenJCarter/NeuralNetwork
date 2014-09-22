@@ -1,0 +1,8 @@
+cmake_minimum_required(VERSION 2.6)
+project(ai)
+set(PROJECT_BRIEF "ai")
+set(CMAKE_BUILD_TYPE DEBUG)
+include_directories ("src")
+add_subdirectory(src)
+add_subdirectory(test)
+option(use_cblas "make use of cblas for fast linear alg" OFF)
