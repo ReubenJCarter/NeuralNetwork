@@ -2,6 +2,7 @@ set(aiSrc
 	csvFile.cpp
 	matd.cpp
 	FFNN.cpp
+	matrixLoader.cpp
 )	
 add_library(ai STATIC ${aiSrc})
 if(use_cblas)

@@ -2,6 +2,7 @@ set(testSrc
 	csvFileTest.cpp
 	matdTest.cpp
 	FFNNTest.cpp
+	matrixLoaderTest.cpp
 )
 foreach(iTestSrc ${testSrc})
 	add_executable(${iTestSrc} ${iTestSrc})
