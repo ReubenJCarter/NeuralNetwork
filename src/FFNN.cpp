@@ -133,18 +133,7 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 	Matd outputDifference;
 	outputDifference = a[L] - y;
 	delta[L] = HadProd(outputDifference, z[L]);
-	
-	#if PRINT_OUTPUT == 1
-		printf("\ntraining output:\n");
-		y.Print();
-		printf("\noutput difference:\n");
-		outputDifference.Print();
-		printf("\nderivative activation function\n");
-		z[L].Print();
-		printf("\nneuron errors layer %d:\n", L);
-		delta[L].Print();
-	#endif
-	
+
 	//Gradient decent to adjust weights
 	Matd trIn(fInput.rows + 1, fInput.cols);
 	trIn.Copy(fInput, 0, 0);//copy input back into aRun 
@@ -157,6 +146,14 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 	layer[L] -= product * (fLearningRate / fInput.cols);
 		
 	#if PRINT_OUTPUT == 1
+		printf("\ntraining output:\n");
+		y.Print();
+		printf("\noutput difference:\n");
+		outputDifference.Print();
+		printf("\nderivative activation function\n");
+		z[L].Print();
+		printf("\nneuron errors layer %d:\n", L);
+		delta[L].Print();		
 		printf("\na[%d]:\n", L - 1);
 		if(L > 0) a[L - 1].Print(); else trIn.Print();
 		printf("\ndelta * trans(a[%d]:\n", L - 1);
@@ -165,21 +162,27 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 		layer[L].Print();
 	#endif
 	
-	//Back Propagate the error
 	for(int i = L - 1; i >= 0; i--)
 	{
+		//Back Propagate the error
 		z[i].ComponentFunction(GradientSigmiod);
-		z[i].SetRow(z[i].rows - 1, 1.0);
-		delta[i] = HadProd(MultTransA(layer[i + 1], delta[i + 1]), z[i]);
+		z[i].SetRow(z[i].rows - 1, 0.0);
+		delta[i] = HadProd(Trans(layer[i + 1]) * delta[i + 1], z[i]);
 		//Gradient decent to adjust weights
-		if(L > 0)
-			layer[L] -= (delta[L] * Trans(a[L - 1])) * (fLearningRate / fInput.cols);
+		Matd product;
+		if(i > 0)
+			product = delta[i] * Trans(a[i - 1]);
 		else
-			layer[L] -= (delta[L] * Trans(trIn)) * (fLearningRate / fInput.cols);
+			product = delta[i] * Trans(trIn);
+		layer[i] -= product * (fLearningRate / fInput.cols);
 			
 		#if PRINT_OUTPUT == 1
+			printf("\nderivative z[%d]\n", i);
+			z[i].Print();
+			printf("\ndelta[%d]\n", i);
+			delta[i].Print();
 			printf("\ngradient decented layer %d:\n", L);
-			layer[L].Print();
+			layer[i].Print();
 		#endif
 	}
 	
