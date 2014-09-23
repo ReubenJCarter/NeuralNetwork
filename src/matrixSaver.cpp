@@ -5,6 +5,11 @@ MatrixSaver::MatrixSaver()
 	
 }
 
+MatrixSaver::MatrixSaver(const char* fFN)
+{
+	OpenCSVFile(fFN);
+}
+
 MatrixSaver::~MatrixSaver()
 {
 	CloseFile();

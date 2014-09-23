@@ -11,6 +11,7 @@ class MatrixSaver
 		
 	public:
 		MatrixSaver();
+		MatrixSaver(const char* fFN);
 		~MatrixSaver();
 		void OpenCSVFile(const char* fFN);
 		void CloseFile();
