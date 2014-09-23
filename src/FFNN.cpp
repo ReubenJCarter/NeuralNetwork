@@ -21,6 +21,16 @@ double FFNN::GradientSigmiod(double fX)
 	return (1 - sigm) * sigm;
 }
 
+double FFNN::Linear(double fX)
+{
+	return fX;
+}
+
+double FFNN::GradientLinear(double fX)
+{
+	return 1;
+}
+
 FFNN::FFNN()
 {
 	layerNumber = 0;
@@ -37,6 +47,10 @@ void FFNN::Create(int fInputNumber, int fLayerNumber, const int fLayerSizes[])
 	layerNumber = fLayerNumber;
 	layer = new Matd[layerNumber];
 	int prevLayerSize = fInputNumber + 1;
+	
+	activationFunction = new CompFunction[layerNumber];
+	gradientActivationFunction = new CompFunction[layerNumber];
+	
 	for(int i = 0; i < layerNumber; i++)
 	{
 		layer[i].Create(fLayerSizes[i] + 1, prevLayerSize);
@@ -44,7 +58,16 @@ void FFNN::Create(int fInputNumber, int fLayerNumber, const int fLayerSizes[])
 		prevLayerSize = fLayerSizes[i] + 1;
 		layer[i].SetRow(layer[i].rows - 1, 0.0);
 		layer[i].Set(layer[i].rows - 1, layer[i].cols - 1, 1.0);
+		
+		activationFunction[i] = Sigmiod;
+		gradientActivationFunction[i] = GradientSigmiod;
 	}
+}
+
+void FFNN::SetActivationFunction(int fLayer, CompFunction fActivationFunction, CompFunction fGradientActivationFunction)
+{
+	activationFunction[fLayer] = fActivationFunction; 
+	gradientActivationFunction[fLayer] = fGradientActivationFunction; 
 }
 
 void FFNN::Destroy()
@@ -64,7 +87,7 @@ Matd FFNN::ForwardUpdate(Matd& fInput)
 	for(int i = 0; i < layerNumber; i++)
 	{
 		output = layer[i] * output;
-		output.ComponentFunction(Sigmiod);
+		output.ComponentFunction(activationFunction[i]);
 		output.SetRow(output.rows - 1, 1.0);
 	}
 	return output;
@@ -109,7 +132,7 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 	{
 		aRun = layer[i] * aRun;
 		z[i] = aRun;
-		aRun.ComponentFunction(Sigmiod);
+		aRun.ComponentFunction(activationFunction[i]);
 		aRun.SetRow(aRun.rows - 1, 1.0);
 		a[i] = aRun;
 		
@@ -129,7 +152,7 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 	y.SetRow(y.rows - 1, 1.0);
 	
 	int L = layerNumber - 1;
-	z[L].ComponentFunction(GradientSigmiod);
+	z[L].ComponentFunction(gradientActivationFunction[L]);
 	Matd outputDifference;
 	outputDifference = a[L] - y;
 	delta[L] = HadProd(outputDifference, z[L]);
@@ -165,7 +188,7 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 	for(int i = L - 1; i >= 0; i--)
 	{
 		//Back Propagate the error
-		z[i].ComponentFunction(GradientSigmiod);
+		z[i].ComponentFunction(gradientActivationFunction[i]);
 		z[i].SetRow(z[i].rows - 1, 0.0);
 		delta[i] = HadProd(Trans(layer[i + 1]) * delta[i + 1], z[i]);
 		//Gradient decent to adjust weights

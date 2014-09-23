@@ -1,5 +1,6 @@
 #include "FFNN.h"
 #include <stdio.h>
+#include <math.h>
 
 void NandTest()
 {
@@ -109,10 +110,46 @@ void XnorTest()
 	ffnn.Print();	
 }
 
+void SinTest()
+{
+	printf("\n\n//*********XNOR TEST**********//\n");
+	FFNN ffnn;
+	const int layerSize[] = {6, 1};
+	ffnn.Create(1, 2, layerSize);
+	//Train
+	
+	Matd trainingInput(1, 360);
+	Matd trainingOutput(1, 360);
+	
+	for(int i = 0 ; i < 360; i++)
+	{
+		trainingInput.Set(0, i, (double)i);
+		trainingOutput.Set(0, i, (1.0 + sin(3.1415 * (double)i / 180.0)) / 2.0);
+	}
+	
+	for(int i = 0; i < 1000; i++)
+		ffnn.BackPropogate(trainingInput, trainingOutput, 1);
+	
+	//Test
+	Matd testOutput;
+	
+	testOutput = ffnn.ForwardUpdate(trainingInput);
+	printf("\n\ninput to nn:\n");
+	printf("\n\n\noutput from neural network after training:\n");
+	trainingOutput.Print();
+	testOutput.Print();
+	//MatrixSaver saver("testFile.csv");
+	//saver.WriteMatrix(mat);
+	
+	printf("\nweights after training:\n\n");
+	ffnn.Print();	
+}
+
 int main()
 {
 	NandTest();
 	XnorTest();
+	SinTest();
 	
 	return 0;
 }
