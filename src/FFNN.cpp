@@ -190,3 +190,61 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 		printf("END BP\n");
 	#endif
 }
+
+void FFNN::Save(const char* fFN)
+{
+	FILE* fptr;
+	fptr = fopen(fFN, "wb");
+	if(fptr != NULL)
+	{
+		fprintf(fptr, "%d\n", layerNumber);//layerNumber
+		for(int i = 0; i < layerNumber; i++)
+		{
+			fprintf(fptr, "%d,%d\n", layer[i].rows, layer[i].cols);
+			for(int k = 0; k < layer[i].rows; k++)
+			{
+				for(int j = 0; j < layer[i].cols; j++)
+				{
+					fprintf(fptr, "%f", layer[i].Get(k, j));
+					if(j < layer[i].cols - 1)
+						fprintf(fptr, ",");
+					else
+						fprintf(fptr, "\n");
+				}
+			}
+		}
+		fclose(fptr);
+	}
+}
+
+void FFNN::Load(const char* fFN)
+{
+	Destroy();
+	FILE* fptr;
+	fptr = fopen(fFN, "rb");
+	if(fptr != NULL)
+	{
+		fscanf(fptr, "%d\n", &layerNumber);
+		layer = new Matd[layerNumber];
+		
+		for(int i = 0; i < layerNumber; i++)
+		{
+			int r, c;
+			fscanf(fptr, "%d,%d\n", &r, &c);
+			layer[i].Create(r, c);
+			for(int k = 0; k < layer[i].rows; k++)
+			{
+				for(int j = 0; j < layer[i].cols; j++)
+				{
+					double val;
+					if(j < layer[i].cols - 1)
+						fscanf(fptr, "%lf,", &val);
+					else
+						fscanf(fptr, "%lf\n", &val);
+					layer[i].Set(k, j, val);
+				}
+			}
+		}
+		fclose(fptr);
+	}
+}

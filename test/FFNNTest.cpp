@@ -82,6 +82,10 @@ void XnorTest()
 	for(int i = 0; i < 10000; i++)
 		ffnn.BackPropogate(trainingInput, trainingOutput, 1);
 	
+	//WriteBack
+	ffnn.Save("testFile.csv");
+	ffnn.Load("testFile.csv");
+	
 	//Test
 	Matd testInput(2, 4); 
 	Matd testOutput;
