@@ -1,13 +1,13 @@
 #ifndef MATRIXLOADER_H
 #define MATRIXLOADER_H
 
-#include "csvFile.h"
+#include "csvFileParser.h"
 #include "matd.h"
 
 class MatrixLoader
 {
 	private:
-		CSVFile csvFile;
+		CSVFileParser csvFile;
 		
 	public:
 		MatrixLoader();

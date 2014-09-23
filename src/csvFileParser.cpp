@@ -1,39 +1,40 @@
-#include "csvFile.h"
+#include "csvFileParser.h"
 #include <stdlib.h>
 
-int CSVFile::GetNextChar()
+int CSVFileParser::GetNextChar()
 {
 	return fgetc(fptr);
 }
 
-CSVFile::CSVFile()
+CSVFileParser::CSVFileParser()
 {
 	fptr = 0;
 	currentCol = 0;
 	currentRow = 0;
 }
 
-CSVFile::CSVFile(const char* fFN)
+CSVFileParser::CSVFileParser(const char* fFN)
 {
 	Open(fFN);
 	currentCol = 0;
 	currentRow = 0;
 }
 
-void CSVFile::Open(const char* fFN)
+void CSVFileParser::Open(const char* fFN)
 {
+	
 	fptr = fopen(fFN, "rb");
 	if(fptr == NULL) printf("failed to open a csv file\n");
 }
 
-void CSVFile::Close()
+void CSVFileParser::Close()
 {
 	fclose(fptr);
 	currentCol = 0;
 	currentRow = 0;
 }
 
-int CSVFile::Get(char* fBuffer, int fRow, int fCol)
+int CSVFileParser::Get(char* fBuffer, int fRow, int fCol)
 {
 	int len = 0; 
 	int nextChar = GetNextChar();
@@ -82,21 +83,21 @@ int CSVFile::Get(char* fBuffer, int fRow, int fCol)
 	return len;
 }
 
-int CSVFile::GetString(char* fBuffer, int fRow, int fCol)
+int CSVFileParser::GetString(char* fBuffer, int fRow, int fCol)
 {
 	int len = Get(fBuffer, fRow, fCol);
 	fBuffer[len] = '\0';
 	return len + 1;
 }
 
-int CSVFile::GetInt(int fRow, int fCol)
+int CSVFileParser::GetInt(int fRow, int fCol)
 {
 	char buffer[100];
 	Get(buffer, fRow, fCol);
 	return atoi(buffer);
 }
 
-double CSVFile::GetDouble(int fRow, int fCol)
+double CSVFileParser::GetDouble(int fRow, int fCol)
 {
 	char buffer[100];
 	Get(buffer, fRow, fCol);

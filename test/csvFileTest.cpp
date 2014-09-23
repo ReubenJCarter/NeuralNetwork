@@ -1,5 +1,5 @@
 #include <stdlib.h>
-#include "csvFile.h"
+#include "csvFileParser.h"
 
 const char* csvFile = "a,1,10,100\n"
 					  "b,3,30,300\n"
@@ -14,7 +14,7 @@ int main(int argc, char* argv[])
 	fclose(fptr);
 	int row = 0;
 	int col = 0;
-	CSVFile csv("testFile.csv");
+	CSVFileParser csv("testFile.csv");
 	char buffer[1000];
 	int len = 2;
 	

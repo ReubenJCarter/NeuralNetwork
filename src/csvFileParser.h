@@ -1,9 +1,9 @@
-#ifndef CSVFILE_H
-#define CSVFILE_H
+#ifndef CSVFILEPARSER_H
+#define CSVFILEPARSER_H
 
 #include <stdio.h>
 
-class CSVFile
+class CSVFileParser
 {
 	private:
 		FILE* fptr;
@@ -13,8 +13,8 @@ class CSVFile
 		int GetNextChar();
 		
 	public:
-		CSVFile();
-		CSVFile(const char* fFN);
+		CSVFileParser();
+		CSVFileParser(const char* fFN);
 		void Open(const char* fFN);
 		void Close();
 		int Get(char* fBuffer, int fRow, int fCol);
