@@ -146,14 +146,21 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 	#endif
 	
 	//Gradient decent to adjust weights
-	aRun.Copy(fInput, 0, 0);//copy input back into aRun 
-	aRun.SetRow(aRun.rows - 1, 1.0);
+	Matd trIn(fInput.rows + 1, fInput.cols);
+	trIn.Copy(fInput, 0, 0);//copy input back into aRun 
+	trIn.SetRow(trIn.rows - 1, 1.0);
+	Matd product;
 	if(L > 0)
-		layer[L] -= (delta[L] * Trans(a[L - 1])) * (fLearningRate / fInput.cols);
+		product = delta[L] * Trans(a[L - 1]);
 	else
-		layer[L] -= (delta[L] * Trans(aRun)) * (fLearningRate / fInput.cols);
+		product = delta[L] * Trans(trIn);
+	layer[L] -= product * (fLearningRate / fInput.cols);
 		
 	#if PRINT_OUTPUT == 1
+		printf("\na[%d]:\n", L - 1);
+		if(L > 0) a[L - 1].Print(); else trIn.Print();
+		printf("\ndelta * trans(a[%d]:\n", L - 1);
+		product.Print();
 		printf("\ngradient decented layer %d:\n", L);
 		layer[L].Print();
 	#endif
@@ -168,7 +175,12 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 		if(L > 0)
 			layer[L] -= (delta[L] * Trans(a[L - 1])) * (fLearningRate / fInput.cols);
 		else
-			layer[L] -= (delta[L] * Trans(aRun)) * (fLearningRate / fInput.cols);
+			layer[L] -= (delta[L] * Trans(trIn)) * (fLearningRate / fInput.cols);
+			
+		#if PRINT_OUTPUT == 1
+			printf("\ngradient decented layer %d:\n", L);
+			layer[L].Print();
+		#endif
 	}
 	
 	#if PRINT_OUTPUT == 1
