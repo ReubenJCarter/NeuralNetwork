@@ -1,4 +1,6 @@
 #include "FFNN.h"
+#include "matrixSaver.h"
+#include "matrixLoader.h"
 #include <stdio.h>
 #include <math.h>
 
@@ -114,32 +116,34 @@ void SinTest()
 {
 	printf("\n\n//*********XNOR TEST**********//\n");
 	FFNN ffnn;
-	const int layerSize[] = {6, 1};
+	const int layerSize[] = {15, 1};
 	ffnn.Create(1, 2, layerSize);
 	//Train
 	
-	Matd trainingInput(1, 360);
-	Matd trainingOutput(1, 360);
+	Matd trainingInput(1, 10);
+	Matd trainingOutput(1, 10);
 	
-	for(int i = 0 ; i < 360; i++)
+	for(int i = 0 ; i < 10; i++)
 	{
-		trainingInput.Set(0, i, (double)i);
-		trainingOutput.Set(0, i, (1.0 + sin(3.1415 * (double)i / 180.0)) / 2.0);
+		//trainingInput.Set(0, i, 3.1415 * (double)i / 180.0);
+		trainingInput.Set(0, i, (double)i / 10);
+		//trainingOutput.Set(0, i, (1.0 + sin(4 * 3.1415 * (double)i / 180.0)) / 2.0);
+		trainingOutput.Set(0, i, (double)i / 10);
 	}
 	
-	for(int i = 0; i < 1000; i++)
+	for(int i = 0; i < 10000; i++)
 		ffnn.BackPropogate(trainingInput, trainingOutput, 1);
 	
 	//Test
 	Matd testOutput;
 	
 	testOutput = ffnn.ForwardUpdate(trainingInput);
-	printf("\n\ninput to nn:\n");
-	printf("\n\n\noutput from neural network after training:\n");
+	printf("\n\n\nideal output:\n");
 	trainingOutput.Print();
+	printf("\n\n\noutput from neural network after training:\n");
 	testOutput.Print();
-	//MatrixSaver saver("testFile.csv");
-	//saver.WriteMatrix(mat);
+	MatrixSaver saver("testFile.csv");
+	saver.WriteMatrix(testOutput);
 	
 	printf("\nweights after training:\n\n");
 	ffnn.Print();	
