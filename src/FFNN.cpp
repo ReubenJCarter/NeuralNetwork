@@ -1,6 +1,11 @@
 #include "FFNN.h"
 #include <stdio.h>
 
+double FFNN::Square(double fX)
+{
+	return fX * fX;
+}
+
 double FFNN::FastExp(double fX) 
 {
   fX = 1.0 + fX / 1024;

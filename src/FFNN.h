@@ -14,6 +14,8 @@ class FFNN
 		CompFunction* activationFunction;
 		CompFunction* gradientActivationFunction;
 		
+		static double Square(double fX);
+		
 	public:		
 		static double FastExp(double fX);
 		static double Sigmiod(double fX);
