@@ -190,7 +190,9 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 		//Back Propagate the error
 		z[i].ComponentFunction(gradientActivationFunction[i]);
 		z[i].SetRow(z[i].rows - 1, 0.0);
-		delta[i] = HadProd(Trans(layer[i + 1]) * delta[i + 1], z[i]);
+		Matd transMult;
+		transMult = Trans(layer[i + 1]) * delta[i + 1];
+		delta[i] = HadProd(transMult, z[i]);
 		//Gradient decent to adjust weights
 		Matd product;
 		if(i > 0)
