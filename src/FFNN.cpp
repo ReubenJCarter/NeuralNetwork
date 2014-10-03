@@ -220,6 +220,9 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 	#if PRINT_OUTPUT == 1
 		printf("END BP\n");
 	#endif
+	delete[] z;
+	delete[] a;
+	delete[] delta;
 }
 
 void FFNN::Save(const char* fFN)
