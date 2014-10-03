@@ -36,6 +36,7 @@ class Matd
 		void SetCol(int fCol, double fVal);
 		void ComponentFunction(double (*Func)(double a));
 		void Copy(Matd& fMat, int fRowOffset, int fColOffset);
+		void Copy(Matd& fMat, int fFromRowOffset, int fFromColOffset, int fToRowOffset, int fToColOffset, int fRows, int fCols);
 };
 
 #endif

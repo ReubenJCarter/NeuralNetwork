@@ -1,5 +1,6 @@
 #include "FFNN.h"
 #include <stdio.h>
+#include <math.h>
 
 double FFNN::Square(double fX)
 {
@@ -8,11 +9,11 @@ double FFNN::Square(double fX)
 
 double FFNN::FastExp(double fX) 
 {
-  fX = 1.0 + fX / 1024;
-  fX *= fX; fX *= fX; fX *= fX; fX *= fX;
-  fX *= fX; fX *= fX; fX *= fX; fX *= fX;
-  fX *= fX; fX *= fX;
-  return fX;
+  //fX = 1.0 + fX / 1024;
+  //fX *= fX; fX *= fX; fX *= fX; fX *= fX;
+  //fX *= fX; fX *= fX; fX *= fX; fX *= fX;
+  //fX *= fX; fX *= fX;
+  return exp(fX);
 }
 
 double FFNN::Sigmiod(double fX)
@@ -28,12 +29,12 @@ double FFNN::GradientSigmiod(double fX)
 
 double FFNN::Linear(double fX)
 {
-	return fX;
+	return fX * 0.05;
 }
 
 double FFNN::GradientLinear(double fX)
 {
-	return 1;
+	return 0.05;
 }
 
 FFNN::FFNN()
@@ -164,7 +165,7 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 
 	//Gradient decent to adjust weights
 	Matd trIn(fInput.rows + 1, fInput.cols);
-	trIn.Copy(fInput, 0, 0);//copy input back into aRun 
+	trIn.Copy(fInput, 0, 0);//copy input 
 	trIn.SetRow(trIn.rows - 1, 1.0);
 	Matd product;
 	if(L > 0)

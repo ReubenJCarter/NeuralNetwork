@@ -319,7 +319,7 @@ void Matd::Print()
 		printf("|");
 		for(int j = 0; j < cols; j++)
 		{
-			printf("%4.4f,", Get(i, j));
+			printf("%.4f,", Get(i, j));
 		}
 		printf("|\n");
 	}
@@ -334,7 +334,7 @@ void Matd::Randomize(double fMin, double fMax)
 		collOff = i * rows;
 		for(int j = 0; j < rows; j++)
 		{
-			data[collOff + j] = (range * ((float)rand() / RAND_MAX)) + fMin;
+			data[collOff + j] = (range * ((double)rand() / (double)RAND_MAX)) + fMin;
 		}
 	}
 }
@@ -396,4 +396,17 @@ void Matd::Copy(Matd& fMat, int fRowOffset, int fColOffset)
 			data[colOff + j + fRowOffset] = fMat.data[copyColOff + j];
 		}
 	}
+}
+
+void Matd::Copy(Matd& fMat, int fFromRowOffset, int fFromColOffset, int fToRowOffset, int fToColOffset, int fRows, int fCols)
+{
+	for(int i = 0; i < fCols; i++)
+	{
+		int copyColOff = (i + fFromColOffset) * fMat.rows;
+		int colOff = (i + fToColOffset) * rows;
+		for(int j = 0; j < fRows; j++)
+		{
+			data[colOff + j + fToRowOffset] = fMat.data[copyColOff + (j + fFromRowOffset)];
+		}
+	}	
 }

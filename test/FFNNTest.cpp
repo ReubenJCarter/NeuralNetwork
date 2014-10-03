@@ -3,6 +3,7 @@
 #include "matrixLoader.h"
 #include <stdio.h>
 #include <math.h>
+#include <stdlib.h>
 
 void NandTest()
 {
@@ -114,36 +115,48 @@ void XnorTest()
 
 void SinTest()
 {
-	printf("\n\n//*********XNOR TEST**********//\n");
+	printf("\n\n//*********Sin TEST**********//\n");
 	FFNN ffnn;
-	const int layerSize[] = {15, 1};
+	const int layerSize[] = {20, 1};
 	ffnn.Create(1, 2, layerSize);
+	ffnn.SetActivationFunction(1, FFNN::Linear, FFNN::GradientLinear);
 	//Train
 	
-	Matd trainingInput(1, 10);
-	Matd trainingOutput(1, 10);
+	Matd trainingInput(1, 100);
+	Matd trainingOutput(1, 100);
 	
-	for(int i = 0 ; i < 10; i++)
+	for(int i = 0 ; i < 100; i++)
 	{
-		//trainingInput.Set(0, i, 3.1415 * (double)i / 180.0);
-		trainingInput.Set(0, i, (double)i / 10);
-		//trainingOutput.Set(0, i, (1.0 + sin(4 * 3.1415 * (double)i / 180.0)) / 2.0);
-		trainingOutput.Set(0, i, (double)i / 10);
+		double randNum = (4 * 3.141 * ((double)rand() / (double)RAND_MAX)) - 3.141 * 2;
+		trainingInput.Set(0, i, randNum);
+		trainingOutput.Set(0, i, sin(randNum));
 	}
 	
-	for(int i = 0; i < 10000; i++)
-		ffnn.BackPropogate(trainingInput, trainingOutput, 1);
+	for(int i = 0; i < 5000; i++)
+		ffnn.BackPropogate(trainingInput, trainingOutput, 0.25 * 100);
 	
 	//Test
 	Matd testOutput;
-	
-	testOutput = ffnn.ForwardUpdate(trainingInput);
+	Matd testInput(1, 100);
+	for(int i = 0 ; i < 100; i++)
+	{
+		double randNum = (4 * 3.141 * ((double)rand() / (double)RAND_MAX)) - 3.141 * 2;
+		testInput.Set(0, i, randNum);
+	}
+	testOutput = ffnn.ForwardUpdate(testInput);
 	printf("\n\n\nideal output:\n");
 	trainingOutput.Print();
 	printf("\n\n\noutput from neural network after training:\n");
 	testOutput.Print();
+	
+	Matd saveMatrix(4, 100);
+	saveMatrix.Copy(testInput, 0, 0, 0, 0, 1, 100);
+	saveMatrix.Copy(testOutput, 0, 0, 1, 0, 1, 100);
+	saveMatrix.Copy(trainingInput, 0, 0, 2, 0, 1, 100);
+	saveMatrix.Copy(trainingOutput, 0, 0, 3, 0, 1, 100);
+	saveMatrix = Trans(saveMatrix);
 	MatrixSaver saver("testFile.csv");
-	saver.WriteMatrix(testOutput);
+	saver.WriteMatrix(saveMatrix);
 	
 	printf("\nweights after training:\n\n");
 	ffnn.Print();	

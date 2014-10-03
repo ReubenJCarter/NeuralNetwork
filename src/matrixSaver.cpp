@@ -32,7 +32,7 @@ void MatrixSaver::WriteMatrix(Matd& fMat)
 	{
 		for(int j = 0; j < fMat.cols; j++)
 		{
-			fprintf(fptr, "%f", fMat.Get(i, j));
+			fprintf(fptr, "%lf", fMat.Get(i, j));
 			if(j < fMat.cols - 1)
 				fprintf(fptr, ",");
 			else
