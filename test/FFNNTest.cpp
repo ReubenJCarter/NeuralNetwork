@@ -113,6 +113,11 @@ void XnorTest()
 	ffnn.Print();	
 }
 
+double GetRandInRange(double fMin, double fMax)
+{
+	return( (fMax - fMin) * ((double)rand() / (double)RAND_MAX)) + fMin;
+}
+
 void SinTest()
 {
 	printf("\n\n//*********Sin TEST**********//\n");
@@ -127,12 +132,12 @@ void SinTest()
 	
 	for(int i = 0 ; i < 100; i++)
 	{
-		double randNum = (4 * 3.141 * ((double)rand() / (double)RAND_MAX)) - 3.141 * 2;
+		double randNum = GetRandInRange(-3.141 * 2, 3.141 * 2);
 		trainingInput.Set(0, i, randNum);
 		trainingOutput.Set(0, i, sin(randNum));
 	}
 	
-	for(int i = 0; i < 5000; i++)
+	for(int i = 0; i < 2000; i++)
 		ffnn.BackPropogate(trainingInput, trainingOutput, 0.25 * 100);
 	
 	//Test
@@ -140,7 +145,7 @@ void SinTest()
 	Matd testInput(1, 100);
 	for(int i = 0 ; i < 100; i++)
 	{
-		double randNum = (4 * 3.141 * ((double)rand() / (double)RAND_MAX)) - 3.141 * 2;
+		double randNum = GetRandInRange(-3.141 * 2, 3.141 * 2);
 		testInput.Set(0, i, randNum);
 	}
 	testOutput = ffnn.ForwardUpdate(testInput);
