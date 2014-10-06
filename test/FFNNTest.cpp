@@ -137,8 +137,16 @@ void SinTest()
 		trainingOutput.Set(0, i, sin(randNum));
 	}
 	
-	for(int i = 0; i < 2000; i++)
+	int epochs = 2000;
+	Matd cost(epochs, 2);
+	for(int i = 0; i < epochs; i++)
+	{
 		ffnn.BackPropogate(trainingInput, trainingOutput, 0.25 * 100);
+		cost.Set(i, 0, ffnn.GetCost(trainingInput, trainingOutput));
+		cost.Set(i, 1, (double)i);
+	}
+	MatrixSaver saverCost("costFunction.csv");
+	saverCost.WriteMatrix(cost);
 	
 	//Test
 	Matd testOutput;
@@ -167,11 +175,36 @@ void SinTest()
 	ffnn.Print();	
 }
 
+void SingleNeuronCostFunctionTest()
+{
+	printf("\n\n//*********COST FUNCTION TEST**********//\n");
+	FFNN ffnn;
+	const int layerSize[] = {1};
+	ffnn.Create(1, 1, layerSize);
+	ffnn.SetWeight(0, 0, 0, 2.0);
+	ffnn.SetWeight(0, 0, 1, 2.0);
+	Matd trainIn(1, 1); 
+	trainIn.Set(0, 0, 1.0);
+	Matd trainOut(1, 1);
+	trainOut.Set(0, 0, 0.0);
+	int epochs = 300;
+	Matd cost(epochs, 2);
+	for(int i = 0; i < epochs; i++)
+	{
+		ffnn.BackPropogate(trainIn, trainOut, 0.15);
+		cost.Set(i, 1, ffnn.GetCost(trainIn, trainOut));
+		cost.Set(i, 0, (double)i);
+	}
+	MatrixSaver saverCost("costFunction2.csv");
+	saverCost.WriteMatrix(cost);
+}
+
 int main()
 {
 	NandTest();
 	XnorTest();
 	SinTest();
+	SingleNeuronCostFunctionTest();
 	
 	return 0;
 }

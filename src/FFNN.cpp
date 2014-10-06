@@ -159,9 +159,9 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 	
 	int L = layerNumber - 1;
 	z[L].ComponentFunction(gradientActivationFunction[L]);
-	Matd outputDifference;
-	outputDifference = a[L] - y;
-	delta[L] = HadProd(outputDifference, z[L]);
+	Matd deltaCostFunction;
+	deltaCostFunction = a[L] - y;
+	delta[L] = HadProd(deltaCostFunction, z[L]);
 
 	//Gradient decent to adjust weights
 	Matd trIn(fInput.rows + 1, fInput.cols);
@@ -178,7 +178,7 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 		printf("\ntraining output:\n");
 		y.Print();
 		printf("\noutput difference:\n");
-		outputDifference.Print();
+		deltaCostFunction.Print();
 		printf("\nderivative activation function\n");
 		z[L].Print();
 		printf("\nneuron errors layer %d:\n", L);
@@ -223,6 +223,24 @@ void FFNN::BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRa
 	delete[] z;
 	delete[] a;
 	delete[] delta;
+}
+
+double FFNN::GetCost(Matd& fInput, Matd& fTrainingOutput)
+{
+	//C= 1/(2n) sum_x(||y(x) - aL(x)||^2)
+	double cost = 0;
+	Matd a;
+	a = ForwardUpdate(fInput);
+	for(int j = 0; j < fTrainingOutput.cols; j++)
+	{
+		for(int i = 0; i < fTrainingOutput.rows; i++)
+		{
+			double diff = fTrainingOutput.Get(i, j) - a.Get(i, j);
+			cost += diff * diff;
+		}
+	}
+	cost *= 1 / (2 * (double)fTrainingOutput.cols);
+	return cost;
 }
 
 void FFNN::Save(const char* fFN)
@@ -281,4 +299,9 @@ void FFNN::Load(const char* fFN)
 		}
 		fclose(fptr);
 	}
+}
+
+void FFNN::SetWeight(int fLayer, int fNeuron, int fWeight, double fValue)
+{
+	layer[fLayer].Set(fNeuron, fWeight, fValue);
 }

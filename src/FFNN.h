@@ -31,8 +31,10 @@ class FFNN
 		Matd ForwardUpdate(Matd& fInput);
 		void Print();
 		void BackPropogate(Matd& fInput, Matd& fTrainingOutput, double fLearningRate);
+		double GetCost(Matd& fInput, Matd& fTrainingOutput);
 		void Save(const char* fFN);
 		void Load(const char* fFN);
+		void SetWeight(int fLayer, int fNeuron, int fWeight, double fValue);
 };
 
 #endif
