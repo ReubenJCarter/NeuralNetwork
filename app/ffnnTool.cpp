@@ -3,8 +3,8 @@
 #include <stdlib.h>
 #include "FFNN.h"
 #include "matd.h"
-#include "matrixLoader.h"
-#include "matrixSaver.h"
+#include "fileAccess/matrixLoader.h"
+#include "fileAccess/matrixSaver.h"
 
 #define MAX_LAYERS 1000
 

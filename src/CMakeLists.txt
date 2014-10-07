@@ -1,9 +1,9 @@
 set(aiSrc
-	csvFileParser.cpp
 	matd.cpp
 	FFNN.cpp
-	matrixLoader.cpp
-	matrixSaver.cpp
+	fileAccess/csvFileParser.cpp
+	fileAccess/matrixLoader.cpp
+	fileAccess/matrixSaver.cpp
 )	
 add_library(ai STATIC ${aiSrc})
 if(use_cblas)

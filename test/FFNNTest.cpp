@@ -1,6 +1,6 @@
 #include "FFNN.h"
-#include "matrixSaver.h"
-#include "matrixLoader.h"
+#include "fileAccess/matrixSaver.h"
+#include "fileAccess/matrixLoader.h"
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
