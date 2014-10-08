@@ -4,6 +4,7 @@ set(testSrc
 	FFNNTest.cpp
 	matrixLoaderTest.cpp
 	matrixSaverTest.cpp
+	stockDataTest.cpp
 )
 foreach(iTestSrc ${testSrc})
 	add_executable(${iTestSrc} ${iTestSrc})
