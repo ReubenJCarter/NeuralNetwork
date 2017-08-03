@@ -1,7 +1,12 @@
 #pragma once
 
+
+#include "CommonHeaders.h"
+
+
 namespace NN
 {	
+
 namespace Util
 {
 	
@@ -13,7 +18,7 @@ namespace Util
  */
  
  
-void LoadImage(void* data, int& width, int& height, const char* fn);
+bool LoadImage(void* data, int& width, int& height, const char* fn);
 
 
 }

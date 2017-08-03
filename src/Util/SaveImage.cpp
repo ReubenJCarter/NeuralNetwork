@@ -1,7 +1,6 @@
 #include "SaveImage.h"
 
-#include <iostream>
-#include <stdint.h>
+
 #include <IL/il.h>
 
 
@@ -15,13 +14,13 @@ bool SaveImage(void* data, int& width, int& height, const char* fn)
 {
 	ilInit();
 	
-	uint8_t* cdata = new uint8_t[width * height];
+	unsigned char* cdata = new unsigned char[width * height];
 	
 	for(int i = 0; i < height; i++)
 	{
 		for(int j = 0; j < width; j++)
 		{
-			cdata[(height - 1 - i) * width + j] = data[i * width + j];
+			cdata[(height - 1 - i) * width + j] = ((unsigned char*)data)[i * width + j];
 		}
 	}
 	
@@ -41,7 +40,7 @@ bool SaveImage(void* data, int& width, int& height, const char* fn)
 		else
 		{
 			ilEnable(IL_FILE_OVERWRITE);
-			ilSaveImage(filename);
+			ilSaveImage(fn);
 			ilDisable(IL_FILE_OVERWRITE);
 			ilDeleteImages(1, &ilimage);
 		}

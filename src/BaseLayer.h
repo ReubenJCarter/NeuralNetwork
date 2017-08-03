@@ -1,22 +1,39 @@
 #pragma once
 
+
+#include "Util/CommonHeaders.h"
+
+
 namespace NN
 {
-	
+
+
 //
 //Base Layer, every layer is one of these
 //
+
 
 class BaseLayer
 {
 public:
 	std::vector<float> output; //all layers have an output
 	std::vector<float> error; //all layers have an error signal
+	std::vector<BaseLayer*> nextL;
+	std::vector<BaseLayer*> prevL;
 	
+	bool ConnectOutput(BaseLayer* nxt);
+	bool ConnectInput(BaseLayer* prv);
+	BaseLayer* NextLayer(int inx=0);
+	BaseLayer* PrevLayer(int inx=0);
+	
+	virtual void Allocate(int layerSz);
 	virtual void ComputeForward();
 	virtual void Backpropogate();
 }; 
 
+
+
+/*
 
 //
 //All functional layers are one to one eg. fully connected neuuron layer, conv layer, max pooling layer etc.
@@ -75,5 +92,7 @@ public:
 	virtual void ComputeForward();
 	virtual void Backpropogate();
 };
+
+*/
 
 }

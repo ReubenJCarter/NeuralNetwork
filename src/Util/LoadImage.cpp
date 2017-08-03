@@ -1,6 +1,8 @@
 #include "LoadImage.h"
 
 
+#include <IL/il.h>
+
 
 namespace NN
 {	
@@ -8,7 +10,7 @@ namespace Util
 {
 	
 
-void LoadImage(void* data, int& width, int& height, const char* fn)
+bool LoadImage(void* data, int& width, int& height, const char* fn)
 {
 	ilInit();
 	
@@ -26,7 +28,6 @@ void LoadImage(void* data, int& width, int& height, const char* fn)
 		
 		//convert data to B4 type and format
 		ilConvertImage(IL_RGBA, IL_UNSIGNED_BYTE); 
-		Deallocate();
 		
 		//copy data
 		uint8_t* dataPtr = ilGetData();
