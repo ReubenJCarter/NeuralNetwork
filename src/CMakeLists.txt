@@ -9,4 +9,4 @@ set(NNSrc
 
 add_library(NN STATIC ${NNSrc})
 
-target_link_libraries(NN Devil)
+target_link_libraries(NN OpenCL clBLAS Devil)

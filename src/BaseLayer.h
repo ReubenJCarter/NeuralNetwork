@@ -1,6 +1,6 @@
 #pragma once
 
-
+#include "OpenCLHelper/OpenCLHelper.h"
 #include "Util/CommonHeaders.h"
 
 
@@ -15,9 +15,9 @@ namespace NN
 
 class BaseLayer
 {
-public:
-	std::vector<float> output; //all layers have an output
-	std::vector<float> error; //all layers have an error signal
+public:	
+	std::string type;
+
 	std::vector<BaseLayer*> nextL;
 	std::vector<BaseLayer*> prevL;
 	
