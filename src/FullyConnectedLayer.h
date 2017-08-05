@@ -19,6 +19,7 @@ class FullyConnectedLayer: public BaseLayer
 {
 public:
 	int layerSize;
+	int inputNumber;
 	cl_mem output;
 	cl_mem error;
 	cl_mem weights;
@@ -26,7 +27,7 @@ public:
 
 	FullyConnectedLayer();
 	void RandomizeWeights(double wmin, double wmax, double bmin, double bmax);//need to be allocated before this
-	virtual void Allocate(int layerSz);//need to be connected before this 
+	virtual void Allocate();//need to be connected before this 
 	virtual void ComputeForward();
 	virtual void Backpropogate();
 }; 

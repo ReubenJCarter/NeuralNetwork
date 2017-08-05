@@ -17,6 +17,7 @@ class BaseLayer
 {
 public:	
 	std::string type;
+	CLHelper::CLEnvironment* clEnvironment;
 
 	std::vector<BaseLayer*> nextL;
 	std::vector<BaseLayer*> prevL;
