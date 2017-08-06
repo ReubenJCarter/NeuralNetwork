@@ -20,6 +20,7 @@ class FullyConnectedLayer: public BaseLayer
 public:
 	int layerSize;
 	int inputNumber;
+	int layerThickness;
 	cl_mem output;
 	cl_mem error;
 	cl_mem weights;
