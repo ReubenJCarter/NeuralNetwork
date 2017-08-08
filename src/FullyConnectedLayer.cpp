@@ -37,8 +37,8 @@ void FullyConnectedLayer::Init()
 	/* Create kernel program from source file*/
 	size_t fullyConnectedLayerCLProgramSrcSize = fullyConnectedLayerCLProgramSrc.length(); 
 	cl_int err;
-	const char* clProgram = fullyConnectedLayerCLProgramSrc.c_str(); 
-	clProgram = clCreateProgramWithSource(clEnvironment->ctx, 1, (const char **)(clProgram), (const size_t *)&fullyConnectedLayerCLProgramSrcSize, &err);	
+	const char* clProgramSrc = fullyConnectedLayerCLProgramSrc.c_str(); 
+	clProgram = clCreateProgramWithSource(clEnvironment->ctx, 1, (const char **)(&clProgramSrc), (const size_t *)&fullyConnectedLayerCLProgramSrcSize, &err);	
 	err = clBuildProgram(clProgram, 1, &clEnvironment->deviceId, NULL, NULL, NULL);
  
 	/* Create data parallel OpenCL copyBiasesKernel */	
