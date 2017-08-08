@@ -24,11 +24,11 @@ int main(int argc, char* argv[])
 	std::cout << std::endl; 
 	std::cout << "First GPU Device" << std::endl;
 	
-	DeviceInfo dinfo = platforms.GetFirstGPUDeviceInfo();
+	DeviceInfo* dinfo = platforms.GetFirstGPUDeviceInfo();
 	
-	std::cout << "device:" << dinfo.name << std::endl;
-	std::cout << "avalible:" << dinfo.avalible << std::endl;
-	std::cout << "type:" << dinfo.type << std::endl;
+	std::cout << "device:" << dinfo->name << std::endl;
+	std::cout << "avalible:" << dinfo->avalible << std::endl;
+	std::cout << "type:" << dinfo->type << std::endl;
 	
 	return 1;
 }

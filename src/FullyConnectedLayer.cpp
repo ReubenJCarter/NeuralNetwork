@@ -7,6 +7,45 @@ namespace NN
 {
 	
 	
+std::string fullyConnectedLayerCLProgramSrc = ""
+"__kernel void copyBiasesKernel(__global float* bias, __global float* output, int layerSize, int layerThickness)"
+"{"
+"	int base = get_global_id(0);"
+"	for(int i = 0; i < layerThickness; i++)"
+"		output[i * layerSize + base] = bias[base];"
+"	"
+"}"
+""
+""
+"__kernel void activationFunctionKernel(__global float* v, float param0, float param1)"
+"{"
+""
+""
+"}"
+"__kernel void deltaActivationFunctionKernel(__global float* v, float param0, float param1)"
+"{"
+""
+"}"
+;
+	
+	
+cl_program FullyConnectedLayer::clProgram = NULL;
+cl_kernel FullyConnectedLayer::copyBiasesKernel = NULL;
+	
+void FullyConnectedLayer::Init()
+{
+	/* Create kernel program from source file*/
+	size_t fullyConnectedLayerCLProgramSrcSize = fullyConnectedLayerCLProgramSrc.length(); 
+	cl_int err;
+	const char* clProgram = fullyConnectedLayerCLProgramSrc.c_str(); 
+	clProgram = clCreateProgramWithSource(clEnvironment->ctx, 1, (const char **)(clProgram), (const size_t *)&fullyConnectedLayerCLProgramSrcSize, &err);	
+	err = clBuildProgram(clProgram, 1, &clEnvironment->deviceId, NULL, NULL, NULL);
+ 
+	/* Create data parallel OpenCL copyBiasesKernel */	
+	copyBiasesKernel = clCreateKernel(clProgram, "copyBiasesKernel", &err);
+}
+	
+	
 FullyConnectedLayer::FullyConnectedLayer()
 {
 	//set the type
@@ -45,7 +84,7 @@ void FullyConnectedLayer::Allocate()
 {
 	//allocate memory in opencl device
 	cl_int err;
-	output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
+	output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
 	biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
 	weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
 }
@@ -58,11 +97,21 @@ void FullyConnectedLayer::ComputeForward()
 	
 	if(PrevLayer()->type == "FullyConnectedLayer")
 	{
+		cl_event event = NULL;
+		cl_int err;
+		
 		//get the prev layer 
 		FullyConnectedLayer* prvL = (FullyConnectedLayer*)PrevLayer();
 		
 		//copy biases into the output matrix temporaraly for sgemm computation 
-		
+		err = clSetKernelArg(copyBiasesKernel, 0, sizeof(cl_mem), (void *)&biases);
+		err = clSetKernelArg(copyBiasesKernel, 1, sizeof(cl_mem), (void *)&output);
+		err = clSetKernelArg(copyBiasesKernel, 2, sizeof(int), (void *)&layerSize);
+		err = clSetKernelArg(copyBiasesKernel, 3, sizeof(int), (void *)&layerThickness);
+		size_t global_item_size = layerSize;
+		size_t local_item_size = 1;
+		err = clEnqueueNDRangeKernel(clEnvironment->queue, copyBiasesKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+		err = clWaitForEvents(1, &event);
 		
 		//Compute weighted input from inputs and weights and biasses z = w * i + b, temmp store in output
 		int M = layerSize; //rows of matrix A
@@ -71,15 +120,13 @@ void FullyConnectedLayer::ComputeForward()
 		int lda = K;
 		int ldb = N;
 		int ldc = N;
-		cl_int err;
-		cl_event event = NULL;
         err = clblasSgemm(clblasRowMajor, clblasNoTrans, clblasNoTrans,
                           M, N, K,
                           1, weights, 0, lda,
                           prvL->output, 0, ldb, 1,
                           output, 0, ldc,
                           1, &clEnvironment->queue, 0, NULL, &event );
-		err = clWaitForEvents( 1, &event );
+		err = clWaitForEvents(1, &event);
 		
 		//compute activation function on weighted input
 		

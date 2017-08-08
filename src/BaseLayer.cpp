@@ -4,6 +4,9 @@
 namespace NN
 {
 	
+	
+CLHelper::CLEnvironment* BaseLayer::clEnvironment;
+
 
 bool BaseLayer::ConnectOutput(BaseLayer* nxt)
 {

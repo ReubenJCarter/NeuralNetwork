@@ -16,9 +16,10 @@ namespace NN
 class BaseLayer
 {
 public:	
+	static CLHelper::CLEnvironment* clEnvironment;
+	
 	std::string type;
-	CLHelper::CLEnvironment* clEnvironment;
-
+	
 	std::vector<BaseLayer*> nextL;
 	std::vector<BaseLayer*> prevL;
 	
@@ -27,9 +28,9 @@ public:
 	BaseLayer* NextLayer(int inx=0);
 	BaseLayer* PrevLayer(int inx=0);
 	
-	virtual void Allocate(int layerSz);
-	virtual void ComputeForward();
-	virtual void Backpropogate();
+	virtual void Allocate() = 0;
+	virtual void ComputeForward() = 0;
+	virtual void Backpropogate() = 0;
 }; 
 
 

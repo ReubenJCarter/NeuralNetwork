@@ -25,6 +25,19 @@ public:
 //Activation Function 
 //
 
+const std::string ActivationIdentity = ""
+"__kernel void ActivationIdentity(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x;"
+"}"
+"__kernel void DeltaActivationIdentity(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = 1;"
+"}"
 
 class IdentityFunction:public ActivationFunction
 {
@@ -40,6 +53,20 @@ public:
 //
 //BinaryStep Function 
 //
+
+const std::string ActivationBinaryStep = ""
+"__kernel void ActivationBinaryStep(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x < 0 ? 0 : 1;"
+"}"
+"__kernel void DeltaActivationBinaryStep(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = 0;"
+"}"
 
 
 class BinaryStep:public ActivationFunction
@@ -61,6 +88,20 @@ public:
 //LogisticFunction Function 
 //
 
+const std::string ActivationLogistic = ""
+"__kernel void ActivationLogistic(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = 1.0 /(1.0 + exp(-x));"
+"}"
+"__kernel void DeltaActivationLogistic(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	float f = 1.0 /(1.0 + exp(-x));"
+"	v[base] = f * (1.0 - f);"
+"}"
 
 class LogisticFunction:public ActivationFunction
 {

@@ -187,7 +187,7 @@ public:
 		return true; 
 	}
 	
-	DeviceInfo& GetFirstGPUDeviceInfo()
+	DeviceInfo* GetFirstGPUDeviceInfo()
 	{
 		for(int i = 0; i < platformInfo.size(); i++)
 		{
@@ -195,10 +195,11 @@ public:
 			{
 				if(platformInfo[i].deviceInfo[j].type == "GPU")
 				{
-					return platformInfo[i].deviceInfo[j];
+					return &(platformInfo[i].deviceInfo[j]);
 				}
 			}
 		}
+		return NULL;
 	}
 };
 

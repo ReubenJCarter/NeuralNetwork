@@ -18,6 +18,12 @@ namespace NN
 class FullyConnectedLayer: public BaseLayer
 {
 public:
+	static cl_program clProgram;
+	static cl_kernel copyBiasesKernel;	
+	
+	static void Init();
+	
+public:
 	int layerSize;
 	int inputNumber;
 	int layerThickness;
