@@ -20,10 +20,19 @@ class FullyConnectedLayer: public BaseLayer
 public:
 	static cl_program clProgram;
 	static cl_kernel copyBiasesKernel;	
+	static cl_kernel activationIdentityKernel;	
+	static cl_kernel deltaActivationIdentityKernel;	
+	static cl_kernel activationBinaryStepKernel;	
+	static cl_kernel deltaActivationBinaryStepKernel;	
+	static cl_kernel activationLogisticKernel;	
+	static cl_kernel deltaActivationLogisticKernel;	
+
 	
 	static void Init();
 	
 public:
+	enum ACTIVATION_TYPE{Identity, BinaryStep, Logistic};
+	ACTIVATION_TYPE activationType; 
 	int layerSize;
 	int inputNumber;
 	int layerThickness;

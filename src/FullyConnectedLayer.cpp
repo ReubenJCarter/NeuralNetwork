@@ -1,4 +1,5 @@
 #include "FullyConnectedLayer.h"
+#include "ActivationFunctions.h"
 
 #include <clBLAS.h>
 
@@ -6,34 +7,199 @@
 namespace NN
 {
 	
+//
+//Activation Function 
+//
+
+const std::string activationFunctionsSrc = ""
+"__kernel void ActivationIdentity(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x;"
+"}"
+"__kernel void DeltaActivationIdentity(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = 1;"
+"}"
+""
+"__kernel void ActivationBinaryStep(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x < 0 ? 0 : 1;"
+"}"
+"__kernel void DeltaActivationBinaryStep(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = 0;"
+"}"
+""
+"__kernel void ActivationLogistic(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = 1.0 /(1.0 + exp(-x));"
+"}"
+"__kernel void DeltaActivationLogistic(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	float f = 1.0 /(1.0 + exp(-x));"
+"	v[base] = f * (1.0 - f);"
+"}"
+""
+"__kernel void ActivationTanH(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = tanh(x);"
+"}"
+"__kernel void DeltaActivationTanH(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	float f = tanh(x);"
+"	v[base] = 1.0 - f * f;"
+"}"
+""
+"__kernel void ActivationArcTan(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = atan(x);"
+"}"
+"__kernel void DeltaActivationArcTan(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = 1.0/(x * x + 1);"
+"}"
+""
+"__kernel void ActivationSoftSign(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x / (1 + abs(x));"
+"}"
+"__kernel void DeltaActivationSoftSign(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	float f = 1 + abs(x);"
+"	v[base] = 1.0 / (t * t);"
+"}"
+""
+"__kernel void ActivationReLU(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x < 0 ? 0 : x;"
+"}"
+"__kernel void DeltaActivationReLU(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x < 0 ? 0 : 1;"
+"}"
+""
+"__kernel void ActivationLeakyReLU(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x < 0 ? 0.01 * x : x;"
+"}"
+"__kernel void DeltaActivationLeakyReLU(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x < 0 ? 0.01 : 1;"
+"}"
+""
+"__kernel void ActivationLeakyPReLU(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x < 0 ? param0 * x : x;"
+"}"
+"__kernel void DeltaActivationLeakyPReLU(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x < 0 ? param0 : 1;"
+"}"
+""
+"__kernel void ActivationELU(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = x < 0 ? param0 * (exp(x) - 1.0) : x;"
+"}"
+"__kernel void DeltaActivationELU(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	float f = param0 * (exp(x) - 1.0);"
+"	v[base] = x < 0 ? f + param0 : 1;"
+"}"
+""
+"__kernel void ActivationSoftPlus(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = log(1.0 + exp(x));"
+"}"
+"__kernel void DeltaActivationSoftPlus(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = 1.0 / (1.0 + exp(-x));"
+"}"
+""
+"__kernel void ActivationGaussian(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = exp(-x * x);"
+"}"
+"__kernel void DeltaActivationGaussian(__global float* v, float param0, float param1)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	v[base] = -2 * x * exp(-x * x);"
+"}"
+;
 	
-std::string fullyConnectedLayerCLProgramSrc = ""
-"__kernel void copyBiasesKernel(__global float* bias, __global float* output, int layerSize, int layerThickness)"
+const std::string copyBias = ""
+"__kernel void CopyBiases(__global float* bias, __global float* output, int layerSize, int layerThickness)"
 "{"
 "	int base = get_global_id(0);"
 "	for(int i = 0; i < layerThickness; i++)"
 "		output[i * layerSize + base] = bias[base];"
 "	"
 "}"
-""
-""
-"__kernel void activationFunctionKernel(__global float* v, float param0, float param1)"
-"{"
-""
-""
-"}"
-"__kernel void deltaActivationFunctionKernel(__global float* v, float param0, float param1)"
-"{"
-""
-"}"
-;
+"";
 	
 	
 cl_program FullyConnectedLayer::clProgram = NULL;
+cl_kernel FullyConnectedLayer::activationIdentityKernel = NULL;
+cl_kernel FullyConnectedLayer::deltaActivationIdentityKernel = NULL;
+cl_kernel FullyConnectedLayer::activationBinaryStepKernel = NULL;
+cl_kernel FullyConnectedLayer::deltaActivationBinaryStepKernel = NULL;
+cl_kernel FullyConnectedLayer::activationLogisticKernel = NULL;
+cl_kernel FullyConnectedLayer::deltaActivationLogisticKernel = NULL;
 cl_kernel FullyConnectedLayer::copyBiasesKernel = NULL;
 	
 void FullyConnectedLayer::Init()
 {
+	//build src
+	std::string fullyConnectedLayerCLProgramSrc = "";
+	fullyConnectedLayerCLProgramSrc += activationFunctionsSrc;
+	fullyConnectedLayerCLProgramSrc += copyBias;
+	
 	/* Create kernel program from source file*/
 	size_t fullyConnectedLayerCLProgramSrcSize = fullyConnectedLayerCLProgramSrc.length(); 
 	cl_int err;
@@ -41,8 +207,14 @@ void FullyConnectedLayer::Init()
 	clProgram = clCreateProgramWithSource(clEnvironment->ctx, 1, (const char **)(&clProgramSrc), (const size_t *)&fullyConnectedLayerCLProgramSrcSize, &err);	
 	err = clBuildProgram(clProgram, 1, &clEnvironment->deviceId, NULL, NULL, NULL);
  
-	/* Create data parallel OpenCL copyBiasesKernel */	
-	copyBiasesKernel = clCreateKernel(clProgram, "copyBiasesKernel", &err);
+	/* Create data parallel OpenCL kernels*/	
+	activationIdentityKernel = clCreateKernel(clProgram, "ActivationIdentity", &err);
+	deltaActivationIdentityKernel = clCreateKernel(clProgram, "DeltaActivationIdentity", &err);
+	activationBinaryStepKernel = clCreateKernel(clProgram, "ActivationBinaryStep", &err);
+	deltaActivationBinaryStepKernel = clCreateKernel(clProgram, "DeltaActivationBinaryStep", &err);
+	activationLogisticKernel = clCreateKernel(clProgram, "ActivationLogistic", &err);
+	deltaActivationLogisticKernel = clCreateKernel(clProgram, "DeltaActivationLogistic", &err);
+	copyBiasesKernel = clCreateKernel(clProgram, "CopyBiases", &err);
 }
 	
 	
@@ -50,6 +222,9 @@ FullyConnectedLayer::FullyConnectedLayer()
 {
 	//set the type
 	type = "FullyConnectedLayer";
+	activationType = Logistic; 
+	
+	layerThickness = 1;
 }
 
 
@@ -82,11 +257,17 @@ void FullyConnectedLayer::RandomizeWeights(double wmin, double wmax, double bmin
 
 void FullyConnectedLayer::Allocate()
 {
-	//allocate memory in opencl device
-	cl_int err;
-	output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
-	biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
-	weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
+	if(PrevLayer()->type == "FullyConnectedLayer")
+	{
+		FullyConnectedLayer* prvL = (FullyConnectedLayer*)PrevLayer();
+		inputNumber = prvL->layerSize;
+	
+		//allocate memory in opencl device
+		cl_int err;
+		output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
+		biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
+		weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
+	}
 }
 
 
@@ -129,7 +310,11 @@ void FullyConnectedLayer::ComputeForward()
 		err = clWaitForEvents(1, &event);
 		
 		//compute activation function on weighted input
-		
+		err = clSetKernelArg(activationLogisticKernel, 0, sizeof(cl_mem), (void *)&output);
+		global_item_size = layerSize;
+		local_item_size = 1;
+		err = clEnqueueNDRangeKernel(clEnvironment->queue, activationLogisticKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+		err = clWaitForEvents(1, &event);
 		
 		//
 	}
