@@ -10,7 +10,7 @@ namespace NN
 
 
 //
-//Fully Connected Layer, every unit is connected to every activation in the previous layer
+//InputLayer Layer, the input vector in host memory is copied to the output cl_mem 
 //
 
 
@@ -18,9 +18,14 @@ class InputLayer: public BaseLayer
 {
 public:
 	int layerSize;
-	std::vector<float> weights;
-
-	virtual void Allocate(int layerSz);
+	int layerThickness;
+	std::vector<float> input;
+	cl_mem output;
+	
+	InputLayer();
+	~InputLayer();
+	void SetSize(int layerSize, int layerThickness);
+	virtual void Allocate();
 	virtual void ComputeForward();
 	virtual void Backpropogate();
 }; 

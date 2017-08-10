@@ -31,7 +31,7 @@ public:
 	static void Init();
 	
 public:
-	enum ACTIVATION_TYPE{Identity, BinaryStep, Logistic};
+	enum ACTIVATION_TYPE{IDENTITY, BINARY_STEP, LOGISTIC};
 	ACTIVATION_TYPE activationType; 
 	int layerSize;
 	int inputNumber;
@@ -42,10 +42,17 @@ public:
 	cl_mem biases;
 
 	FullyConnectedLayer();
+	~FullyConnectedLayer();
+	void SetSize(int lSize);
 	void RandomizeWeights(double wmin, double wmax, double bmin, double bmax);//need to be allocated before this
 	virtual void Allocate();//need to be connected before this 
 	virtual void ComputeForward();
 	virtual void Backpropogate();
+	
+	void DebugPrintOutput();
+	void DebugPrintError();
+	void DebugPrintWeights();
+	void DebugPrintBiases();
 }; 
 
 

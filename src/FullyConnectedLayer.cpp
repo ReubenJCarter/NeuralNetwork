@@ -1,5 +1,5 @@
 #include "FullyConnectedLayer.h"
-#include "ActivationFunctions.h"
+#include "InputLayer.h"
 
 #include <clBLAS.h>
 
@@ -185,12 +185,20 @@ const std::string copyBias = ""
 	
 	
 cl_program FullyConnectedLayer::clProgram = NULL;
+
+//Identity
 cl_kernel FullyConnectedLayer::activationIdentityKernel = NULL;
 cl_kernel FullyConnectedLayer::deltaActivationIdentityKernel = NULL;
+
+//BinaryStep
 cl_kernel FullyConnectedLayer::activationBinaryStepKernel = NULL;
 cl_kernel FullyConnectedLayer::deltaActivationBinaryStepKernel = NULL;
+
+//Logistic
 cl_kernel FullyConnectedLayer::activationLogisticKernel = NULL;
 cl_kernel FullyConnectedLayer::deltaActivationLogisticKernel = NULL;
+
+
 cl_kernel FullyConnectedLayer::copyBiasesKernel = NULL;
 	
 void FullyConnectedLayer::Init()
@@ -208,12 +216,21 @@ void FullyConnectedLayer::Init()
 	err = clBuildProgram(clProgram, 1, &clEnvironment->deviceId, NULL, NULL, NULL);
  
 	/* Create data parallel OpenCL kernels*/	
+	//create activation kernels
+	
+	//Identity
 	activationIdentityKernel = clCreateKernel(clProgram, "ActivationIdentity", &err);
 	deltaActivationIdentityKernel = clCreateKernel(clProgram, "DeltaActivationIdentity", &err);
+	
+	//BinaryStep
 	activationBinaryStepKernel = clCreateKernel(clProgram, "ActivationBinaryStep", &err);
 	deltaActivationBinaryStepKernel = clCreateKernel(clProgram, "DeltaActivationBinaryStep", &err);
+	
+	//Logistic
 	activationLogisticKernel = clCreateKernel(clProgram, "ActivationLogistic", &err);
 	deltaActivationLogisticKernel = clCreateKernel(clProgram, "DeltaActivationLogistic", &err);
+	
+	//copy bias kernel
 	copyBiasesKernel = clCreateKernel(clProgram, "CopyBiases", &err);
 }
 	
@@ -222,11 +239,23 @@ FullyConnectedLayer::FullyConnectedLayer()
 {
 	//set the type
 	type = "FullyConnectedLayer";
-	activationType = Logistic; 
 	
-	layerThickness = 1;
+	//set default activation function
+	activationType = LOGISTIC; 
 }
 
+FullyConnectedLayer::~FullyConnectedLayer()
+{
+	//release cl memory 
+	clReleaseMemObject(output);
+	clReleaseMemObject(biases);
+	clReleaseMemObject(weights);
+}
+
+void FullyConnectedLayer::SetSize(int lSize)
+{
+	layerSize = lSize; 
+}
 
 void FullyConnectedLayer::RandomizeWeights(double wmin, double wmax, double bmin, double bmax)
 {
@@ -261,6 +290,19 @@ void FullyConnectedLayer::Allocate()
 	{
 		FullyConnectedLayer* prvL = (FullyConnectedLayer*)PrevLayer();
 		inputNumber = prvL->layerSize;
+		layerThickness = prvL->layerThickness; // this can be set from the input layer
+	
+		//allocate memory in opencl device
+		cl_int err;
+		output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
+		biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
+		weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
+	}
+	else if(PrevLayer()->type == "InputLayer")
+	{
+		InputLayer* prvL = (InputLayer*)PrevLayer();
+		inputNumber = prvL->layerSize;
+		layerThickness = prvL->layerThickness; // this can be set from the input layer
 	
 		//allocate memory in opencl device
 		cl_int err;
@@ -275,6 +317,9 @@ void FullyConnectedLayer::ComputeForward()
 {	
 	//rows=outputs
 	//cols=intputs
+	
+	int prevLayerThickness;
+	
 	
 	if(PrevLayer()->type == "FullyConnectedLayer")
 	{
@@ -310,13 +355,32 @@ void FullyConnectedLayer::ComputeForward()
 		err = clWaitForEvents(1, &event);
 		
 		//compute activation function on weighted input
-		err = clSetKernelArg(activationLogisticKernel, 0, sizeof(cl_mem), (void *)&output);
+		cl_kernel* activationKernel = &activationLogisticKernel; 
+		if(activationType == IDENTITY)
+			activationKernel = &activationIdentityKernel;
+		else if(activationType == BINARY_STEP)
+			activationKernel = &activationBinaryStepKernel; 
+		else if(activationType == LOGISTIC)
+			activationKernel = &activationLogisticKernel; 
+		err = clSetKernelArg(*activationKernel, 0, sizeof(cl_mem), (void *)&output);
 		global_item_size = layerSize;
 		local_item_size = 1;
-		err = clEnqueueNDRangeKernel(clEnvironment->queue, activationLogisticKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+		err = clEnqueueNDRangeKernel(clEnvironment->queue, *activationKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
 		err = clWaitForEvents(1, &event);
 		
 		//
+	}
+	else if(PrevLayer()->type == "InputLayer")
+	{
+		FullyConnectedLayer* prvL = (FullyConnectedLayer*)PrevLayer();
+		inputNumber = prvL->layerSize;
+		layerThickness = prvL->layerThickness; // this can be set from the input layer
+	
+		//allocate memory in opencl device
+		cl_int err;
+		output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
+		biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
+		weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
 	}
 }
 

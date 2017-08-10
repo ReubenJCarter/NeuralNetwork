@@ -5,6 +5,7 @@ set(NNSrc
 	Util/MNISTLabelFile.cpp
 	BaseLayer.cpp
 	FullyConnectedLayer.cpp
+	InputLayer.cpp
 )	
 
 add_library(NN STATIC ${NNSrc})
