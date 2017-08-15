@@ -25,6 +25,7 @@ public:
 	InputLayer();
 	~InputLayer();
 	void SetSize(int layerSize, int layerThickness);
+	void ReadOutput(float* buffer);
 	virtual void Allocate();
 	virtual void ComputeForward();
 	virtual void Backpropogate();

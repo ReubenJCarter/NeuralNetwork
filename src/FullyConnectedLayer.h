@@ -45,6 +45,7 @@ public:
 	~FullyConnectedLayer();
 	void SetSize(int lSize);
 	void RandomizeWeights(double wmin, double wmax, double bmin, double bmax);//need to be allocated before this
+	void ReadOutput(float* buffer);
 	virtual void Allocate();//need to be connected before this 
 	virtual void ComputeForward();
 	virtual void Backpropogate();

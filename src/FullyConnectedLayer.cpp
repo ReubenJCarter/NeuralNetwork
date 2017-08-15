@@ -1,45 +1,45 @@
 #include "FullyConnectedLayer.h"
 #include "InputLayer.h"
-
+	
 #include "Util/CommonCLSrc.h"
-
+	
 #include <clBLAS.h>
-
-
+	
+	
 namespace NN
-{
+{	
 	
 const std::string copyBias = ""
 "__kernel void CopyBiases(__global float* bias, __global float* output, int layerSize, int layerThickness)"
-"{"
+"{"	
 "	int base = get_global_id(0);"
 "	for(int i = 0; i < layerThickness; i++)"
 "		output[i * layerSize + base] = bias[base];"
 "	"
-"}"
-"";
+"}"	
+"";	
 	
 	
 cl_program FullyConnectedLayer::clProgram = NULL;
-
+	
 //Identity
 cl_kernel FullyConnectedLayer::activationIdentityKernel = NULL;
 cl_kernel FullyConnectedLayer::deltaActivationIdentityKernel = NULL;
-
+	
 //BinaryStep
 cl_kernel FullyConnectedLayer::activationBinaryStepKernel = NULL;
 cl_kernel FullyConnectedLayer::deltaActivationBinaryStepKernel = NULL;
-
+	
 //Logistic
 cl_kernel FullyConnectedLayer::activationLogisticKernel = NULL;
 cl_kernel FullyConnectedLayer::deltaActivationLogisticKernel = NULL;
-
-
+	
+	
 //Copy Biases
 cl_kernel FullyConnectedLayer::copyBiasesKernel = NULL;
 	
 void FullyConnectedLayer::Init()
-{
+{	
 	//build src
 	std::string fullyConnectedLayerCLProgramSrc = "";
 	fullyConnectedLayerCLProgramSrc += activationFunctionsSrc;
@@ -51,7 +51,7 @@ void FullyConnectedLayer::Init()
 	const char* clProgramSrc = fullyConnectedLayerCLProgramSrc.c_str(); 
 	clProgram = clCreateProgramWithSource(clEnvironment->ctx, 1, (const char **)(&clProgramSrc), (const size_t *)&fullyConnectedLayerCLProgramSrcSize, &err);	
 	err = clBuildProgram(clProgram, 1, &clEnvironment->deviceId, NULL, NULL, NULL);
- 
+	
 	/* Create data parallel OpenCL kernels*/	
 	//create activation kernels
 	
@@ -69,34 +69,34 @@ void FullyConnectedLayer::Init()
 	
 	//copy bias kernel
 	copyBiasesKernel = clCreateKernel(clProgram, "CopyBiases", &err);
-}
+}	
 	
 	
 FullyConnectedLayer::FullyConnectedLayer()
-{
+{	
 	//set the type
 	type = "FullyConnectedLayer";
 	
 	//set default activation function
 	activationType = LOGISTIC; 
-}
-
+}	
+	
 FullyConnectedLayer::~FullyConnectedLayer()
-{
+{	
 	//release cl memory 
 	clReleaseMemObject(output);
 	clReleaseMemObject(biases);
 	clReleaseMemObject(weights);
-}
-
+}	
+	
 void FullyConnectedLayer::SetSize(int lSize)
-{
+{	
 	layerSize = lSize; 
-}
-
+}	
+	
 void FullyConnectedLayer::RandomizeWeights(double wmin, double wmax, double bmin, double bmax)
-{
-	//create random nnubmer generators
+{	
+	//create random nubmer generators
 	unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
 	std::default_random_engine randGenerator(seed);
 	std::normal_distribution<float> randWeight(wmin, wmax);
@@ -118,11 +118,19 @@ void FullyConnectedLayer::RandomizeWeights(double wmin, double wmax, double bmin
 	cl_int err;
 	err = clEnqueueWriteBuffer(clEnvironment->queue, weights, CL_TRUE, 0, layerSize * inputNumber * sizeof(float), &weightBuf[0], 0, NULL, NULL);
 	err = clEnqueueWriteBuffer(clEnvironment->queue, biases, CL_TRUE, 0, layerSize * sizeof(float), &biasBuf[0], 0, NULL, NULL);
-}
-
-
+}	
+	
+	
+void FullyConnectedLayer::ReadOutput(float* buffer)
+{	
+	//read the output buffer from opencl
+	cl_int err;
+	err = clEnqueueReadBuffer(clEnvironment->queue, output, CL_TRUE, 0, layerSize * sizeof(float), buffer, 0, NULL, NULL);
+}	
+	
+	
 void FullyConnectedLayer::Allocate()
-{
+{	
 	if(PrevLayer()->type == "FullyConnectedLayer")
 	{
 		FullyConnectedLayer* prvL = (FullyConnectedLayer*)PrevLayer();
@@ -151,9 +159,9 @@ void FullyConnectedLayer::Allocate()
 		
 		isMemoryAllocated = true; 
 	}
-}
-
-
+}	
+	
+	
 void FullyConnectedLayer::ComputeForward()
 {	
 	if(!isMemoryAllocated)
@@ -165,7 +173,7 @@ void FullyConnectedLayer::ComputeForward()
 	
 	
 	if(PrevLayer()->type == "FullyConnectedLayer" || PrevLayer()->type == "InputLayer")
-	{
+	{	
 		cl_event event = NULL;
 		cl_int err;
 		
@@ -224,13 +232,13 @@ void FullyConnectedLayer::ComputeForward()
 		
 		//
 	}
-}
-
-
-void FullyConnectedLayer::Backpropogate()
-{
+}	
 	
-}
-
-
-}
+	
+void FullyConnectedLayer::Backpropogate()
+{	
+	
+}	
+	
+	
+}	

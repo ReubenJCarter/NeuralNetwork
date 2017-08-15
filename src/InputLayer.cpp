@@ -25,6 +25,13 @@ void InputLayer::SetSize(int lSize, int lThickness)
 	layerThickness = lThickness;
 }
 
+void InputLayer::ReadOutput(float* buffer)
+{	
+	//read the output buffer from opencl
+	cl_int err;
+	err = clEnqueueReadBuffer(clEnvironment->queue, output, CL_TRUE, 0, layerSize * sizeof(float), buffer, 0, NULL, NULL);
+}	
+
 void InputLayer::Allocate()
 {
 	//allocate memory in opencl device
