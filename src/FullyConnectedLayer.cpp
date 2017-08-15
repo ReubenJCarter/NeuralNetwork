@@ -1,177 +1,13 @@
 #include "FullyConnectedLayer.h"
 #include "InputLayer.h"
 
+#include "Util/CommonCLSrc.h"
+
 #include <clBLAS.h>
 
 
 namespace NN
 {
-	
-//
-//Activation Function 
-//
-
-const std::string activationFunctionsSrc = ""
-"__kernel void ActivationIdentity(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = x;"
-"}"
-"__kernel void DeltaActivationIdentity(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = 1;"
-"}"
-""
-"__kernel void ActivationBinaryStep(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = x < 0 ? 0 : 1;"
-"}"
-"__kernel void DeltaActivationBinaryStep(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = 0;"
-"}"
-""
-"__kernel void ActivationLogistic(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = 1.0 /(1.0 + exp(-x));"
-"}"
-"__kernel void DeltaActivationLogistic(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	float f = 1.0 /(1.0 + exp(-x));"
-"	v[base] = f * (1.0 - f);"
-"}"
-""
-"__kernel void ActivationTanH(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = tanh(x);"
-"}"
-"__kernel void DeltaActivationTanH(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	float f = tanh(x);"
-"	v[base] = 1.0 - f * f;"
-"}"
-""
-"__kernel void ActivationArcTan(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = atan(x);"
-"}"
-"__kernel void DeltaActivationArcTan(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = 1.0/(x * x + 1);"
-"}"
-""
-"__kernel void ActivationSoftSign(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = x / (1 + abs(x));"
-"}"
-"__kernel void DeltaActivationSoftSign(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	float f = 1 + abs(x);"
-"	v[base] = 1.0 / (t * t);"
-"}"
-""
-"__kernel void ActivationReLU(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = x < 0 ? 0 : x;"
-"}"
-"__kernel void DeltaActivationReLU(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = x < 0 ? 0 : 1;"
-"}"
-""
-"__kernel void ActivationLeakyReLU(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = x < 0 ? 0.01 * x : x;"
-"}"
-"__kernel void DeltaActivationLeakyReLU(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = x < 0 ? 0.01 : 1;"
-"}"
-""
-"__kernel void ActivationLeakyPReLU(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = x < 0 ? param0 * x : x;"
-"}"
-"__kernel void DeltaActivationLeakyPReLU(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = x < 0 ? param0 : 1;"
-"}"
-""
-"__kernel void ActivationELU(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = x < 0 ? param0 * (exp(x) - 1.0) : x;"
-"}"
-"__kernel void DeltaActivationELU(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	float f = param0 * (exp(x) - 1.0);"
-"	v[base] = x < 0 ? f + param0 : 1;"
-"}"
-""
-"__kernel void ActivationSoftPlus(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = log(1.0 + exp(x));"
-"}"
-"__kernel void DeltaActivationSoftPlus(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = 1.0 / (1.0 + exp(-x));"
-"}"
-""
-"__kernel void ActivationGaussian(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = exp(-x * x);"
-"}"
-"__kernel void DeltaActivationGaussian(__global float* v, float param0, float param1)"
-"{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	v[base] = -2 * x * exp(-x * x);"
-"}"
-;
 	
 const std::string copyBias = ""
 "__kernel void CopyBiases(__global float* bias, __global float* output, int layerSize, int layerThickness)"
@@ -199,6 +35,7 @@ cl_kernel FullyConnectedLayer::activationLogisticKernel = NULL;
 cl_kernel FullyConnectedLayer::deltaActivationLogisticKernel = NULL;
 
 
+//Copy Biases
 cl_kernel FullyConnectedLayer::copyBiasesKernel = NULL;
 	
 void FullyConnectedLayer::Init()
@@ -297,6 +134,8 @@ void FullyConnectedLayer::Allocate()
 		output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
 		biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
 		weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
+		
+		isMemoryAllocated = true; 
 	}
 	else if(PrevLayer()->type == "InputLayer")
 	{
@@ -309,25 +148,40 @@ void FullyConnectedLayer::Allocate()
 		output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
 		biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
 		weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
+		
+		isMemoryAllocated = true; 
 	}
 }
 
 
 void FullyConnectedLayer::ComputeForward()
 {	
+	if(!isMemoryAllocated)
+		Allocate();
 	//rows=outputs
 	//cols=intputs
 	
 	int prevLayerThickness;
 	
 	
-	if(PrevLayer()->type == "FullyConnectedLayer")
+	if(PrevLayer()->type == "FullyConnectedLayer" || PrevLayer()->type == "InputLayer")
 	{
 		cl_event event = NULL;
 		cl_int err;
 		
-		//get the prev layer 
-		FullyConnectedLayer* prvL = (FullyConnectedLayer*)PrevLayer();
+		
+		//get the prev layer output (the input )
+		cl_mem input;
+		if(PrevLayer()->type == "FullyConnectedLayer")
+		{
+			FullyConnectedLayer* prvL = (FullyConnectedLayer*)PrevLayer();
+			input = prvL->output;
+		}
+		else if(PrevLayer()->type == "InputLayer")
+		{
+			InputLayer* prvL = (InputLayer*)PrevLayer();
+			input = prvL->output;
+		}
 		
 		//copy biases into the output matrix temporaraly for sgemm computation 
 		err = clSetKernelArg(copyBiasesKernel, 0, sizeof(cl_mem), (void *)&biases);
@@ -341,7 +195,7 @@ void FullyConnectedLayer::ComputeForward()
 		
 		//Compute weighted input from inputs and weights and biasses z = w * i + b, temmp store in output
 		int M = layerSize; //rows of matrix A
-		int N = prvL->layerThickness; //cols of matrix B
+		int N = layerThickness; //cols of matrix B
 		int K = inputNumber; //cols of matrix A and rows of matrix B
 		int lda = K;
 		int ldb = N;
@@ -349,7 +203,7 @@ void FullyConnectedLayer::ComputeForward()
         err = clblasSgemm(clblasRowMajor, clblasNoTrans, clblasNoTrans,
                           M, N, K,
                           1, weights, 0, lda,
-                          prvL->output, 0, ldb, 1,
+                          input, 0, ldb, 1,
                           output, 0, ldc,
                           1, &clEnvironment->queue, 0, NULL, &event );
 		err = clWaitForEvents(1, &event);
@@ -363,24 +217,12 @@ void FullyConnectedLayer::ComputeForward()
 		else if(activationType == LOGISTIC)
 			activationKernel = &activationLogisticKernel; 
 		err = clSetKernelArg(*activationKernel, 0, sizeof(cl_mem), (void *)&output);
-		global_item_size = layerSize;
+		global_item_size = layerSize * layerThickness;
 		local_item_size = 1;
 		err = clEnqueueNDRangeKernel(clEnvironment->queue, *activationKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
 		err = clWaitForEvents(1, &event);
 		
 		//
-	}
-	else if(PrevLayer()->type == "InputLayer")
-	{
-		FullyConnectedLayer* prvL = (FullyConnectedLayer*)PrevLayer();
-		inputNumber = prvL->layerSize;
-		layerThickness = prvL->layerThickness; // this can be set from the input layer
-	
-		//allocate memory in opencl device
-		cl_int err;
-		output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
-		biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
-		weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
 	}
 }
 

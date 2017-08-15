@@ -30,14 +30,20 @@ void InputLayer::Allocate()
 	//allocate memory in opencl device
 	cl_int err;
 	output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
+	
+	isMemoryAllocated = true;
 }
 
 void InputLayer::ComputeForward()
 {
+	//make sure memory is allocated to compute forwards
+	if(!isMemoryAllocated)
+		Allocate();
+	
 	//copy host input data to cl mem output
 	cl_event event = NULL;
 	cl_int err;
-	clEnqueueWriteBuffer(clEnvironment->queue, output, CL_FALSE, 0, input.size() * sizeof(float), &input[0], 0, NULL, &event);
+	clEnqueueWriteBuffer(clEnvironment->queue, output, CL_FALSE, 0, layerSize * layerThickness * sizeof(float), &input[0], 0, NULL, &event);
 	err = clWaitForEvents(1, &event);
 }
 

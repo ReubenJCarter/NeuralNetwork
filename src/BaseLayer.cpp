@@ -7,6 +7,10 @@ namespace NN
 	
 CLHelper::CLEnvironment* BaseLayer::clEnvironment;
 
+BaseLayer::BaseLayer()
+{
+	isMemoryAllocated = false; 
+}
 
 bool BaseLayer::ConnectOutput(BaseLayer* nxt)
 {
@@ -20,7 +24,7 @@ bool BaseLayer::ConnectOutput(BaseLayer* nxt)
 			break;
 		}
 	}
-	if(!canConnect)
+	if(canConnect)
 	{
 		nextL.push_back(nxt);
 		nxt->prevL.push_back(this);
@@ -41,7 +45,7 @@ bool BaseLayer::ConnectInput(BaseLayer* prv)
 			break;
 		}
 	}
-	if(!canConnect)
+	if(canConnect)
 	{
 		prevL.push_back(prv);
 		prv->nextL.push_back(this);
@@ -58,7 +62,7 @@ BaseLayer* BaseLayer::NextLayer(int inx)
 	}
 	else
 	{
-		std::cerr << "BaseLayer:NextLayer():" << "could not get Next layer, index out of range" << std::endl;
+		std::cerr << "BaseLayer:NextLayer():" << "could not get Next layer, index " << inx <<" out of range" << std::endl;
 		return NULL; 
 	}
 }
@@ -72,7 +76,7 @@ BaseLayer* BaseLayer::PrevLayer(int inx)
 	}
 	else
 	{
-		std::cerr << "BaseLayer:PrevLayer():" << "could not get Prev layer, index out of range" << std::endl;
+		std::cerr << "BaseLayer:PrevLayer():" << "could not get Prev layer, index " << inx <<" out of range" << std::endl;
 		return NULL; 
 	}
 }

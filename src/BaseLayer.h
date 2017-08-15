@@ -19,10 +19,12 @@ public:
 	static CLHelper::CLEnvironment* clEnvironment;
 	
 	std::string type;
+	bool isMemoryAllocated;
 	
 	std::vector<BaseLayer*> nextL;
 	std::vector<BaseLayer*> prevL;
 	
+	BaseLayer();
 	bool ConnectOutput(BaseLayer* nxt);
 	bool ConnectInput(BaseLayer* prv);
 	BaseLayer* NextLayer(int inx=0);
