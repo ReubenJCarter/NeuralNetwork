@@ -16,7 +16,10 @@ InputLayer::InputLayer()
 
 InputLayer::~InputLayer()
 {
-	clReleaseMemObject(output);
+	if(isMemoryAllocated)
+	{
+		clReleaseMemObject(output);
+	}
 }
 
 void InputLayer::SetSize(int lSize, int lThickness)
@@ -25,11 +28,16 @@ void InputLayer::SetSize(int lSize, int lThickness)
 	layerThickness = lThickness;
 }
 
+void InputLayer::SetInput(float* inp)
+{
+	input = inp;
+}
+
 void InputLayer::ReadOutput(float* buffer)
 {	
 	//read the output buffer from opencl
 	cl_int err;
-	err = clEnqueueReadBuffer(clEnvironment->queue, output, CL_TRUE, 0, layerSize * sizeof(float), buffer, 0, NULL, NULL);
+	err = clEnqueueReadBuffer(clEnvironment->queue, output, CL_TRUE, 0, layerSize * layerThickness * sizeof(float), buffer, 0, NULL, NULL);
 }	
 
 void InputLayer::Allocate()
@@ -50,7 +58,7 @@ void InputLayer::ComputeForward()
 	//copy host input data to cl mem output
 	cl_event event = NULL;
 	cl_int err;
-	clEnqueueWriteBuffer(clEnvironment->queue, output, CL_FALSE, 0, layerSize * layerThickness * sizeof(float), &input[0], 0, NULL, &event);
+	clEnqueueWriteBuffer(clEnvironment->queue, output, CL_FALSE, 0, layerSize * layerThickness * sizeof(float), input, 0, NULL, &event);
 	err = clWaitForEvents(1, &event);
 }
 

@@ -9,6 +9,7 @@
 namespace NN
 {	
 	
+	
 const std::string copyBias = ""
 "__kernel void CopyBiases(__global float* bias, __global float* output, int layerSize, int layerThickness)"
 "{"	
@@ -51,6 +52,22 @@ void FullyConnectedLayer::Init()
 	const char* clProgramSrc = fullyConnectedLayerCLProgramSrc.c_str(); 
 	clProgram = clCreateProgramWithSource(clEnvironment->ctx, 1, (const char **)(&clProgramSrc), (const size_t *)&fullyConnectedLayerCLProgramSrcSize, &err);	
 	err = clBuildProgram(clProgram, 1, &clEnvironment->deviceId, NULL, NULL, NULL);
+	if (err == CL_BUILD_PROGRAM_FAILURE) 
+	{
+		// Determine the size of the log
+		size_t logsize;
+		clGetProgramBuildInfo(clProgram, clEnvironment->deviceId, CL_PROGRAM_BUILD_LOG, 0, NULL, &logsize);
+
+		// Allocate memory for the log
+		std::vector<char> logBuffer(logsize);
+
+		// Get the log
+		clGetProgramBuildInfo(clProgram, clEnvironment->deviceId, CL_PROGRAM_BUILD_LOG, logsize, &logBuffer[0], NULL);
+		std::string log(logBuffer.begin(), logBuffer.end());
+		
+		// Print the log
+		std::cout << log;
+	}
 	
 	/* Create data parallel OpenCL kernels*/	
 	//create activation kernels
@@ -69,6 +86,9 @@ void FullyConnectedLayer::Init()
 	
 	//copy bias kernel
 	copyBiasesKernel = clCreateKernel(clProgram, "CopyBiases", &err);
+	
+	
+	
 }	
 	
 	
@@ -83,10 +103,14 @@ FullyConnectedLayer::FullyConnectedLayer()
 	
 FullyConnectedLayer::~FullyConnectedLayer()
 {	
-	//release cl memory 
-	clReleaseMemObject(output);
-	clReleaseMemObject(biases);
-	clReleaseMemObject(weights);
+	if(isMemoryAllocated)
+	{
+		//release cl memory 
+		clReleaseMemObject(weightedSum);
+		clReleaseMemObject(output);
+		clReleaseMemObject(biases);
+		clReleaseMemObject(weights);
+	}
 }	
 	
 void FullyConnectedLayer::SetSize(int lSize)
@@ -125,8 +149,25 @@ void FullyConnectedLayer::ReadOutput(float* buffer)
 {	
 	//read the output buffer from opencl
 	cl_int err;
-	err = clEnqueueReadBuffer(clEnvironment->queue, output, CL_TRUE, 0, layerSize * sizeof(float), buffer, 0, NULL, NULL);
+	err = clEnqueueReadBuffer(clEnvironment->queue, output, CL_TRUE, 0, layerSize * layerThickness * sizeof(float), buffer, 0, NULL, NULL);
 }	
+
+
+void FullyConnectedLayer::ComputeOutputError(float* outputValues)
+{
+	//We presume a forward pass has already happened
+	
+	
+	//compute derivative of activation function with zL
+	
+	
+	//compute the derivative of the cost fucntion with aL (the activation)
+	
+	
+	//compute hadamard product of deriv cost and deriv activation
+	
+	
+}
 	
 	
 void FullyConnectedLayer::Allocate()
@@ -139,6 +180,7 @@ void FullyConnectedLayer::Allocate()
 	
 		//allocate memory in opencl device
 		cl_int err;
+		weightedSum = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
 		output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
 		biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
 		weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
@@ -153,6 +195,7 @@ void FullyConnectedLayer::Allocate()
 	
 		//allocate memory in opencl device
 		cl_int err;
+		weightedSum = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
 		output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
 		biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
 		weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
@@ -166,11 +209,7 @@ void FullyConnectedLayer::ComputeForward()
 {	
 	if(!isMemoryAllocated)
 		Allocate();
-	//rows=outputs
-	//cols=intputs
-	
-	int prevLayerThickness;
-	
+
 	
 	if(PrevLayer()->type == "FullyConnectedLayer" || PrevLayer()->type == "InputLayer")
 	{	
@@ -191,11 +230,11 @@ void FullyConnectedLayer::ComputeForward()
 			input = prvL->output;
 		}
 		
-		//copy biases into the output matrix temporaraly for sgemm computation 
+		//copy biases into the weightedSum matrix temporaraly for sgemm computation 
 		err = clSetKernelArg(copyBiasesKernel, 0, sizeof(cl_mem), (void *)&biases);
-		err = clSetKernelArg(copyBiasesKernel, 1, sizeof(cl_mem), (void *)&output);
-		err = clSetKernelArg(copyBiasesKernel, 2, sizeof(int), (void *)&layerSize);
-		err = clSetKernelArg(copyBiasesKernel, 3, sizeof(int), (void *)&layerThickness);
+		err = clSetKernelArg(copyBiasesKernel, 1, sizeof(cl_mem), (void *)&weightedSum);
+		err = clSetKernelArg(copyBiasesKernel, 2, sizeof(int), &layerSize);
+		err = clSetKernelArg(copyBiasesKernel, 3, sizeof(int), &layerThickness);
 		size_t global_item_size = layerSize;
 		size_t local_item_size = 1;
 		err = clEnqueueNDRangeKernel(clEnvironment->queue, copyBiasesKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
@@ -205,15 +244,15 @@ void FullyConnectedLayer::ComputeForward()
 		int M = layerSize; //rows of matrix A
 		int N = layerThickness; //cols of matrix B
 		int K = inputNumber; //cols of matrix A and rows of matrix B
-		int lda = K;
-		int ldb = N;
-		int ldc = N;
-        err = clblasSgemm(clblasRowMajor, clblasNoTrans, clblasNoTrans,
+		int lda = M;
+		int ldb = K;
+		int ldc = M;
+        err = clblasSgemm(clblasColumnMajor, clblasNoTrans, clblasNoTrans,
                           M, N, K,
                           1, weights, 0, lda,
                           input, 0, ldb, 1,
-                          output, 0, ldc,
-                          1, &clEnvironment->queue, 0, NULL, &event );
+                          weightedSum, 0, ldc,
+                          1, &clEnvironment->queue, 0, NULL, &event );//column major order gemm, multiply input by weights and adds biases in one step
 		err = clWaitForEvents(1, &event);
 		
 		//compute activation function on weighted input
@@ -224,7 +263,10 @@ void FullyConnectedLayer::ComputeForward()
 			activationKernel = &activationBinaryStepKernel; 
 		else if(activationType == LOGISTIC)
 			activationKernel = &activationLogisticKernel; 
-		err = clSetKernelArg(*activationKernel, 0, sizeof(cl_mem), (void *)&output);
+		err = clSetKernelArg(*activationKernel, 0, sizeof(cl_mem), (void *)&weightedSum);
+		err = clSetKernelArg(*activationKernel, 1, sizeof(cl_mem), (void *)&output);
+		err = clSetKernelArg(*activationKernel, 2, sizeof(float), &activationParam0);
+		err = clSetKernelArg(*activationKernel, 3, sizeof(float), &activationParam1);
 		global_item_size = layerSize * layerThickness;
 		local_item_size = 1;
 		err = clEnqueueNDRangeKernel(clEnvironment->queue, *activationKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
@@ -236,9 +278,9 @@ void FullyConnectedLayer::ComputeForward()
 	
 	
 void FullyConnectedLayer::Backpropogate()
-{	
+{
 	
-}	
+}
 	
 	
 }	

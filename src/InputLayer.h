@@ -19,12 +19,13 @@ class InputLayer: public BaseLayer
 public:
 	int layerSize;
 	int layerThickness;
-	std::vector<float> input;
+	float* input;
 	cl_mem output;
 	
 	InputLayer();
 	~InputLayer();
 	void SetSize(int layerSize, int layerThickness);
+	void SetInput(float* inp);
 	void ReadOutput(float* buffer);
 	virtual void Allocate();
 	virtual void ComputeForward();
