@@ -20,12 +20,8 @@ class FullyConnectedLayer: public BaseLayer
 public:
 	static cl_program clProgram;
 	static cl_kernel copyBiasesKernel;	
-	static cl_kernel activationIdentityKernel;	
-	static cl_kernel deltaActivationIdentityKernel;	
-	static cl_kernel activationBinaryStepKernel;	
-	static cl_kernel deltaActivationBinaryStepKernel;	
-	static cl_kernel activationLogisticKernel;	
-	static cl_kernel deltaActivationLogisticKernel;	
+	static cl_kernel activationFunctionKernel;	
+	static cl_kernel deltaActivationFunctionKernel;		
 
 	
 	static void Init();

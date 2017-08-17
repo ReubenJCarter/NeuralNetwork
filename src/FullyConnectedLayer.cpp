@@ -10,7 +10,9 @@ namespace NN
 {	
 	
 	
-const std::string copyBias = ""
+const std::string fullyConnectedLayerSrc = ""
+"typedef enum {IDENTITY, BINARY_STEP, LOGISTIC} ACTIVATION_TYPE;"
+""
 "__kernel void CopyBiases(__global float* bias, __global float* output, int layerSize, int layerThickness)"
 "{"	
 "	int base = get_global_id(0);"
@@ -18,18 +20,21 @@ const std::string copyBias = ""
 "		output[i * layerSize + base] = bias[base];"
 "	"
 "}"	
-"";	
-
-const std::string costFunctions=""
+""
+"void ActivationFunction(__global float* v, __global float* y, float param0, float param1, ACTIVATION_TYPE activationType)"
+"{"
+"	int base = get_global_id(0);"
+"	float x = v[base];"
+"	y[base] = x;"
+"}"
+""
 "__kernel void DeltaQuatraticCostFunction(__global float* output, __global float* activation, __global float* trainExample)"
 "{"	
 "	int i = get_global_id(0);"
 "	output[i] = activation[i] - trainExample[i];"
 "}"	
-"";
-
-const std::string lastLayerError = ""
-"__kernel void LastLayerError(__global float* error, __global float* activation, __global float* trainExample, __global float* weightedSum, int costFunction, int activationFunction)"
+""
+"__kernel void LastLayerError(__global float* error, __global float* activation, __global float* trainExample, __global float* weightedSum, int costFunction, ACTIVATION_TYPE activationType)"
 "{"	
 "	int i = get_global_id(0);"
 "	float deltaCost;" 
@@ -37,7 +42,6 @@ const std::string lastLayerError = ""
 "		deltaCost = activation[i] - trainExample[i];"
 
 "	float deltaActivation;"
-"	if(activationFunction == 0)"
 "	"
 "}"	
 ;
@@ -45,19 +49,9 @@ const std::string lastLayerError = ""
 	
 cl_program FullyConnectedLayer::clProgram = NULL;
 	
-//Identity
-cl_kernel FullyConnectedLayer::activationIdentityKernel = NULL;
-cl_kernel FullyConnectedLayer::deltaActivationIdentityKernel = NULL;
-	
-//BinaryStep
-cl_kernel FullyConnectedLayer::activationBinaryStepKernel = NULL;
-cl_kernel FullyConnectedLayer::deltaActivationBinaryStepKernel = NULL;
-	
-//Logistic
-cl_kernel FullyConnectedLayer::activationLogisticKernel = NULL;
-cl_kernel FullyConnectedLayer::deltaActivationLogisticKernel = NULL;
-	
-	
+//ActivationFunction
+cl_kernel FullyConnectedLayer::activationFunctionKernel = NULL;
+		
 //Copy Biases
 cl_kernel FullyConnectedLayer::copyBiasesKernel = NULL;
 	
@@ -66,7 +60,7 @@ void FullyConnectedLayer::Init()
 	//build src
 	std::string fullyConnectedLayerCLProgramSrc = "";
 	fullyConnectedLayerCLProgramSrc += activationFunctionsSrc;
-	fullyConnectedLayerCLProgramSrc += copyBias;
+	fullyConnectedLayerCLProgramSrc += fullyConnectedLayerSrc;
 	
 	/* Create kernel program from source file*/
 	size_t fullyConnectedLayerCLProgramSrcSize = fullyConnectedLayerCLProgramSrc.length(); 
@@ -94,17 +88,8 @@ void FullyConnectedLayer::Init()
 	/* Create data parallel OpenCL kernels*/	
 	//create activation kernels
 	
-	//Identity
-	activationIdentityKernel = clCreateKernel(clProgram, "ActivationIdentity", &err);
-	deltaActivationIdentityKernel = clCreateKernel(clProgram, "DeltaActivationIdentity", &err);
-	
-	//BinaryStep
-	activationBinaryStepKernel = clCreateKernel(clProgram, "ActivationBinaryStep", &err);
-	deltaActivationBinaryStepKernel = clCreateKernel(clProgram, "DeltaActivationBinaryStep", &err);
-	
-	//Logistic
-	activationLogisticKernel = clCreateKernel(clProgram, "ActivationLogistic", &err);
-	deltaActivationLogisticKernel = clCreateKernel(clProgram, "DeltaActivationLogistic", &err);
+	//ActivationFunction
+	activationFunctionKernel = clCreateKernel(clProgram, "ActivationFunction", &err);
 	
 	//copy bias kernel
 	copyBiasesKernel = clCreateKernel(clProgram, "CopyBiases", &err);
@@ -277,20 +262,14 @@ void FullyConnectedLayer::ComputeForward()
 		err = clWaitForEvents(1, &event);
 		
 		//compute activation function on weighted input
-		cl_kernel* activationKernel = &activationLogisticKernel; 
-		if(activationType == IDENTITY)
-			activationKernel = &activationIdentityKernel;
-		else if(activationType == BINARY_STEP)
-			activationKernel = &activationBinaryStepKernel; 
-		else if(activationType == LOGISTIC)
-			activationKernel = &activationLogisticKernel; 
-		err = clSetKernelArg(*activationKernel, 0, sizeof(cl_mem), (void *)&weightedSum);
-		err = clSetKernelArg(*activationKernel, 1, sizeof(cl_mem), (void *)&output);
-		err = clSetKernelArg(*activationKernel, 2, sizeof(float), &activationParam0);
-		err = clSetKernelArg(*activationKernel, 3, sizeof(float), &activationParam1);
+		err = clSetKernelArg(activationFunctionKernel, 0, sizeof(cl_mem), (void *)&weightedSum);
+		err = clSetKernelArg(activationFunctionKernel, 1, sizeof(cl_mem), (void *)&output);
+		err = clSetKernelArg(activationFunctionKernel, 2, sizeof(float), &activationParam0);
+		err = clSetKernelArg(activationFunctionKernel, 3, sizeof(float), &activationParam1);
+		err = clSetKernelArg(activationFunctionKernel, 4, sizeof(int), &activationType);
 		global_item_size = layerSize * layerThickness;
 		local_item_size = 1;
-		err = clEnqueueNDRangeKernel(clEnvironment->queue, *activationKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+		err = clEnqueueNDRangeKernel(clEnvironment->queue, activationFunctionKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
 		err = clWaitForEvents(1, &event);
 		
 		//
