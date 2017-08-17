@@ -19,6 +19,28 @@ const std::string copyBias = ""
 "	"
 "}"	
 "";	
+
+const std::string costFunctions=""
+"__kernel void DeltaQuatraticCostFunction(__global float* output, __global float* activation, __global float* trainExample)"
+"{"	
+"	int i = get_global_id(0);"
+"	output[i] = activation[i] - trainExample[i];"
+"}"	
+"";
+
+const std::string lastLayerError = ""
+"__kernel void LastLayerError(__global float* error, __global float* activation, __global float* trainExample, __global float* weightedSum, int costFunction, int activationFunction)"
+"{"	
+"	int i = get_global_id(0);"
+"	float deltaCost;" 
+"	if(costFunction == 0)"
+"		deltaCost = activation[i] - trainExample[i];"
+
+"	float deltaActivation;"
+"	if(activationFunction == 0)"
+"	"
+"}"	
+;
 	
 	
 cl_program FullyConnectedLayer::clProgram = NULL;
@@ -156,7 +178,6 @@ void FullyConnectedLayer::ReadOutput(float* buffer)
 void FullyConnectedLayer::ComputeOutputError(float* outputValues)
 {
 	//We presume a forward pass has already happened
-	
 	
 	//compute derivative of activation function with zL
 	
