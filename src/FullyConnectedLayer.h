@@ -20,16 +20,18 @@ class FullyConnectedLayer: public BaseLayer
 public:
 	static cl_program clProgram;
 	static cl_kernel copyBiasesKernel;	
-	static cl_kernel activationFunctionKernel;	
-	static cl_kernel deltaActivationFunctionKernel;		
+	static cl_kernel activationKernel;	
+	static cl_kernel lastLayerErrorKernel;		
 
 	
 	static void Init();
 	
 public:
 	enum ACTIVATION_TYPE{IDENTITY, BINARY_STEP, LOGISTIC};
+	enum COST_TYPE(QUADRATIC);
 	enum RANDOMIZATION{RAND_NORM_DIST}; 
 	ACTIVATION_TYPE activationType; 
+	COST_TYPE costType;
 	int layerSize;
 	int inputNumber;
 	int layerThickness;

@@ -11,38 +11,30 @@ namespace NN
 	
 	
 const std::string fullyConnectedLayerSrc = ""
-"typedef enum {IDENTITY, BINARY_STEP, LOGISTIC} ACTIVATION_TYPE;"
+
 ""
-"__kernel void CopyBiases(__global float* bias, __global float* output, int layerSize, int layerThickness)"
+"__kernel void CopyBiasesKernel(__global float* bias, __global float* output, int layerSize, int layerThickness)"
 "{"	
-"	int base = get_global_id(0);"
+"	int inx = get_global_id(0);"
 "	for(int i = 0; i < layerThickness; i++)"
-"		output[i * layerSize + base] = bias[base];"
+"		output[i * layerSize + inx] = bias[inx];"
 "	"
 "}"	
 ""
-"void ActivationFunction(__global float* v, __global float* y, float param0, float param1, ACTIVATION_TYPE activationType)"
+"__kernel void ActivationKernel(__global float* v, __global float* y, float param0, float param1, ACTIVATION_TYPE activationType)"
 "{"
-"	int base = get_global_id(0);"
-"	float x = v[base];"
-"	y[base] = x;"
+"	int inx = get_global_id(0);"
+"	float x = ActivationFunction(v[inx], param0, param1, activationType)"
+"	y[inx] = x;"
 "}"
 ""
-"__kernel void DeltaQuatraticCostFunction(__global float* output, __global float* activation, __global float* trainExample)"
-"{"	
-"	int i = get_global_id(0);"
-"	output[i] = activation[i] - trainExample[i];"
-"}"	
 ""
-"__kernel void LastLayerError(__global float* error, __global float* activation, __global float* trainExample, __global float* weightedSum, int costFunction, ACTIVATION_TYPE activationType)"
+"__kernel void LastLayerErrorKernel(__global float* error, __global float* activation, __global float* trainExamples, __global float* weightedSum, COST_TYPE costType, ACTIVATION_TYPE activationType)"
 "{"	
-"	int i = get_global_id(0);"
-"	float deltaCost;" 
-"	if(costFunction == 0)"
-"		deltaCost = activation[i] - trainExample[i];"
-
-"	float deltaActivation;"
-"	"
+"	int inx = get_global_id(0);"
+"	float deltaCost = DeltaCostFunction(activation[inx], trainExamples[inx]);"
+"	float deltaActivation = DeltaActivationFunction(weightedSum[inx], 0, 0);"
+"	error[inx] = deltaCost * deltaActivation;"
 "}"	
 ;
 	
@@ -50,10 +42,13 @@ const std::string fullyConnectedLayerSrc = ""
 cl_program FullyConnectedLayer::clProgram = NULL;
 	
 //ActivationFunction
-cl_kernel FullyConnectedLayer::activationFunctionKernel = NULL;
+cl_kernel FullyConnectedLayer::activationKernel = NULL;
 		
 //Copy Biases
 cl_kernel FullyConnectedLayer::copyBiasesKernel = NULL;
+
+//lastLayerErrorKernel
+cl_kernel FullyConnectedLayer::lastLayerErrorKernel = NULL; 
 	
 void FullyConnectedLayer::Init()
 {	
@@ -89,12 +84,13 @@ void FullyConnectedLayer::Init()
 	//create activation kernels
 	
 	//ActivationFunction
-	activationFunctionKernel = clCreateKernel(clProgram, "ActivationFunction", &err);
+	activationKernel = clCreateKernel(clProgram, "ActivationKernel", &err);
 	
 	//copy bias kernel
-	copyBiasesKernel = clCreateKernel(clProgram, "CopyBiases", &err);
+	copyBiasesKernel = clCreateKernel(clProgram, "CopyBiasesKernel", &err);
 	
-	
+	//
+	lastLayerErrorKernel = clCreateKernel(clProgram, "LastLayerErrorKernel", &err);
 	
 }	
 	
@@ -106,6 +102,9 @@ FullyConnectedLayer::FullyConnectedLayer()
 	
 	//set default activation function
 	activationType = LOGISTIC; 
+	
+	//set default cost function type
+	costType = QUADRATIC;
 }	
 	
 FullyConnectedLayer::~FullyConnectedLayer()
@@ -160,19 +159,25 @@ void FullyConnectedLayer::ReadOutput(float* buffer)
 }	
 
 
-void FullyConnectedLayer::ComputeOutputError(float* outputValues)
+void FullyConnectedLayer::ComputeOutputError(float* trainExamples)
 {
+	cl_event event = NULL;
+	cl_int err;
+	
 	//We presume a forward pass has already happened
 	
-	//compute derivative of activation function with zL
+	//run the last layer error kernel
 	
-	
-	//compute the derivative of the cost fucntion with aL (the activation)
-	
-	
-	//compute hadamard product of deriv cost and deriv activation
-	
-	
+	err = clSetKernelArg(lastLayerErrorKernel, 0, sizeof(cl_mem), (void *)&error);
+	err = clSetKernelArg(lastLayerErrorKernel, 1, sizeof(cl_mem), (void *)&output);
+	err = clSetKernelArg(lastLayerErrorKernel, 2, sizeof(cl_mem), (void *)&trainExamples);
+	err = clSetKernelArg(lastLayerErrorKernel, 3, sizeof(cl_mem), (void *)&weightedSum);
+	err = clSetKernelArg(lastLayerErrorKernel, 4, sizeof(int), (void *)&costType);
+	err = clSetKernelArg(lastLayerErrorKernel, 5, sizeof(int), (void *)&activationType);
+	size_t global_item_size = layerSize * layerThickness;
+	size_t local_item_size = 1;
+	err = clEnqueueNDRangeKernel(clEnvironment->queue, lastLayerErrorKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+	err = clWaitForEvents(1, &event);
 }
 	
 	
@@ -262,14 +267,14 @@ void FullyConnectedLayer::ComputeForward()
 		err = clWaitForEvents(1, &event);
 		
 		//compute activation function on weighted input
-		err = clSetKernelArg(activationFunctionKernel, 0, sizeof(cl_mem), (void *)&weightedSum);
-		err = clSetKernelArg(activationFunctionKernel, 1, sizeof(cl_mem), (void *)&output);
-		err = clSetKernelArg(activationFunctionKernel, 2, sizeof(float), &activationParam0);
-		err = clSetKernelArg(activationFunctionKernel, 3, sizeof(float), &activationParam1);
-		err = clSetKernelArg(activationFunctionKernel, 4, sizeof(int), &activationType);
+		err = clSetKernelArg(activationKernel, 0, sizeof(cl_mem), (void *)&weightedSum);
+		err = clSetKernelArg(activationKernel, 1, sizeof(cl_mem), (void *)&output);
+		err = clSetKernelArg(activationKernel, 2, sizeof(float), &activationParam0);
+		err = clSetKernelArg(activationKernel, 3, sizeof(float), &activationParam1);
+		err = clSetKernelArg(activationKernel, 4, sizeof(int), &activationType);
 		global_item_size = layerSize * layerThickness;
 		local_item_size = 1;
-		err = clEnqueueNDRangeKernel(clEnvironment->queue, activationFunctionKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+		err = clEnqueueNDRangeKernel(clEnvironment->queue, activationKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
 		err = clWaitForEvents(1, &event);
 		
 		//
