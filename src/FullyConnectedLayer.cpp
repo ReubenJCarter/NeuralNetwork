@@ -313,7 +313,7 @@ void FullyConnectedLayer::Backpropogate()
 		int lda = M;
 		int ldb = K;
 		int ldc = M;
-        err = clblasSgemm(clblasColumnMajor, clblasTrans, clblasNoTrans,
+        err = clblasSgemm(clblasColumnMajor, clblasTrans, clblasNoTrans, ///GET RID OF MULTIPLY CY C ON THIS
                           M, N, K,
                           1, nxtL->weights, 0, lda,
                           nxtL->error, 0, ldb, 1,
@@ -335,7 +335,28 @@ void FullyConnectedLayer::Backpropogate()
 
 void FullyConnectedLayer::AdjustWeightsBiases()
 {
-	
+	if(PrevLayer()->type == "FullyConnectedLayer")
+	{
+		FullyConnectedLayer* prvL = (FullyConnectedLayer*)PrevLayer();
+		
+		cl_event event = NULL;
+		cl_int err;
+		
+		//multiply error by transposed activation of the previous layer
+		int M = layerSize; //rows of matrix A
+		int N = layerThickness; //cols of matrix B
+		int K = inputNumber; //cols of matrix A and rows of matrix B
+		int lda = M;
+		int ldb = K;
+		int ldc = M;
+        err = clblasSgemm(clblasColumnMajor, clblasNoTrans, clblasTrans, //USE add C TO DO THE DELTA ADD TO WEIGHTS BY LEARNING RATE
+                          M, N, K,
+                          1, error, 0, lda,
+                          prvL->output, 0, ldb, 1,
+                          ???, 0, ldc,
+                          1, &clEnvironment->queue, 0, NULL, &event );//column major order gemm, multiply input by weights and adds biases in one step
+		err = clWaitForEvents(1, &event);
+	}
 }
 	
 	
