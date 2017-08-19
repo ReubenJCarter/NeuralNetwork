@@ -22,6 +22,7 @@ public:
 	static cl_kernel copyBiasesKernel;	
 	static cl_kernel activationKernel;	
 	static cl_kernel lastLayerErrorKernel;		
+	static cl_kernel backpropogateKernel;
 
 	
 	static void Init();
@@ -53,11 +54,7 @@ public:
 	virtual void Allocate();//need to be connected before this 
 	virtual void ComputeForward();
 	virtual void Backpropogate();
-	
-	void DebugPrintOutput();
-	void DebugPrintError();
-	void DebugPrintWeights();
-	void DebugPrintBiases();
+	void AdjustWeightsBiases();
 }; 
 
 

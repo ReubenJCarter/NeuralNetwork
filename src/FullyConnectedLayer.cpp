@@ -24,7 +24,7 @@ const std::string fullyConnectedLayerSrc = ""
 "__kernel void ActivationKernel(__global float* v, __global float* y, float param0, float param1, ACTIVATION_TYPE activationType)"
 "{"
 "	int inx = get_global_id(0);"
-"	float x = ActivationFunction(v[inx], param0, param1, activationType)"
+"	float x = ActivationFunction(v[inx], param0, param1, activationType);"
 "	y[inx] = x;"
 "}"
 ""
@@ -32,13 +32,19 @@ const std::string fullyConnectedLayerSrc = ""
 "__kernel void LastLayerErrorKernel(__global float* error, __global float* activation, __global float* trainExamples, __global float* weightedSum, COST_TYPE costType, ACTIVATION_TYPE activationType)"
 "{"	
 "	int inx = get_global_id(0);"
-"	float deltaCost = DeltaCostFunction(activation[inx], trainExamples[inx]);"
-"	float deltaActivation = DeltaActivationFunction(weightedSum[inx], 0, 0);"
+"	float deltaCost = DeltaCostFunction(activation[inx], trainExamples[inx], costType);"
+"	float deltaActivation = DeltaActivationFunction(weightedSum[inx], 0, 0, activationType);"
 "	error[inx] = deltaCost * deltaActivation;"
 "}"	
+""
+""
+"__kernel void BackpropogateKernel(__global float* error, __global float* nextLayerWeightsTransMultByError, __global float* weightedSum, ACTIVATION_TYPE activationType)"
+"{"
+"	int inx = get_global_id(0);"
+"	error[inx] = nextLayerWeightsTransMultByError[inx] * DeltaActivationFunction(weightedSum[inx], 0, 0, activationType);"
+"}"
 ;
-	
-	
+		
 cl_program FullyConnectedLayer::clProgram = NULL;
 	
 //ActivationFunction
@@ -49,6 +55,9 @@ cl_kernel FullyConnectedLayer::copyBiasesKernel = NULL;
 
 //lastLayerErrorKernel
 cl_kernel FullyConnectedLayer::lastLayerErrorKernel = NULL; 
+
+//backpropogateKernel
+cl_kernel FullyConnectedLayer::backpropogateKernel = NULL;
 	
 void FullyConnectedLayer::Init()
 {	
@@ -89,9 +98,11 @@ void FullyConnectedLayer::Init()
 	//copy bias kernel
 	copyBiasesKernel = clCreateKernel(clProgram, "CopyBiasesKernel", &err);
 	
-	//
+	//last layer kernel
 	lastLayerErrorKernel = clCreateKernel(clProgram, "LastLayerErrorKernel", &err);
 	
+	//backpropogate kernel
+	backpropogateKernel = clCreateKernel(clProgram, "BackpropogateKernel", &err);
 }	
 	
 	
@@ -159,15 +170,18 @@ void FullyConnectedLayer::ReadOutput(float* buffer)
 }	
 
 
-void FullyConnectedLayer::ComputeOutputError(float* trainExamples)
+void FullyConnectedLayer::ComputeOutputError(float* trainExamplesBuffer)
 {
 	cl_event event = NULL;
 	cl_int err;
 	
 	//We presume a forward pass has already happened
 	
-	//run the last layer error kernel
+	//create cl memory for the train exemple
+	cl_mem trainExamples = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
+	err = clEnqueueWriteBuffer(clEnvironment->queue, trainExamples, CL_TRUE, 0, layerSize * layerThickness * sizeof(float), trainExamplesBuffer, 0, NULL, NULL);
 	
+	//run the last layer error kernel
 	err = clSetKernelArg(lastLayerErrorKernel, 0, sizeof(cl_mem), (void *)&error);
 	err = clSetKernelArg(lastLayerErrorKernel, 1, sizeof(cl_mem), (void *)&output);
 	err = clSetKernelArg(lastLayerErrorKernel, 2, sizeof(cl_mem), (void *)&trainExamples);
@@ -178,8 +192,10 @@ void FullyConnectedLayer::ComputeOutputError(float* trainExamples)
 	size_t local_item_size = 1;
 	err = clEnqueueNDRangeKernel(clEnvironment->queue, lastLayerErrorKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
 	err = clWaitForEvents(1, &event);
-}
 	
+	//Release trainExampel memory
+	clReleaseMemObject(trainExamples);
+}	
 	
 void FullyConnectedLayer::Allocate()
 {	
@@ -279,10 +295,45 @@ void FullyConnectedLayer::ComputeForward()
 		
 		//
 	}
-}	
-	
-	
+}
+
 void FullyConnectedLayer::Backpropogate()
+{
+	if(NextLayer()->type == "FullyConnectedLayer")
+	{
+		FullyConnectedLayer* nxtL = (FullyConnectedLayer*)NextLayer();
+		
+		cl_event event = NULL;
+		cl_int err;
+		
+		//compute the transpose of the next layers weights matrix multiplied by the next layers error
+		int M = layerSize; //rows of matrix A
+		int N = layerThickness; //cols of matrix B
+		int K = inputNumber; //cols of matrix A and rows of matrix B
+		int lda = M;
+		int ldb = K;
+		int ldc = M;
+        err = clblasSgemm(clblasColumnMajor, clblasTrans, clblasNoTrans,
+                          M, N, K,
+                          1, nxtL->weights, 0, lda,
+                          nxtL->error, 0, ldb, 1,
+                          error, 0, ldc,
+                          1, &clEnvironment->queue, 0, NULL, &event );//column major order gemm, multiply input by weights and adds biases in one step
+		err = clWaitForEvents(1, &event);
+		
+		//hadamard product between the result and deltaActivation(weightedSum (this layers) )
+		err = clSetKernelArg(backpropogateKernel, 0, sizeof(cl_mem), (void *)&error);
+		err = clSetKernelArg(backpropogateKernel, 1, sizeof(cl_mem), (void *)&error);
+		err = clSetKernelArg(backpropogateKernel, 2, sizeof(cl_mem), (void *)&weightedSum);
+		err = clSetKernelArg(backpropogateKernel, 3, sizeof(int), &activationType);
+		size_t global_item_size = layerSize * layerThickness;
+		size_t local_item_size = 1;
+		err = clEnqueueNDRangeKernel(clEnvironment->queue, backpropogateKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+		err = clWaitForEvents(1, &event);
+	}
+}	
+
+void FullyConnectedLayer::AdjustWeightsBiases()
 {
 	
 }
