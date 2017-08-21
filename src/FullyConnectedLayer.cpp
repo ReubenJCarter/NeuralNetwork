@@ -43,6 +43,16 @@ const std::string fullyConnectedLayerSrc = ""
 "	int inx = get_global_id(0);"
 "	error[inx] = nextLayerWeightsTransMultByError[inx] * DeltaActivationFunction(weightedSum[inx], 0, 0, activationType);"
 "}"
+""
+""
+"__kernel void ReduceRowsKernel(__global float* bias, __global float* error, float learningRate, int layerSize, int layerThickness)"
+"{"	
+"	int inx = get_global_id(0);"
+"	float reducedVal = 0;"
+"	for(int i = 0; i < layerThickness; i++)"
+"		reducedVal += error[i * layerSize + inx];"
+"	bias[inx] -= learningRate * reducedVal;"
+"}"	
 ;
 		
 cl_program FullyConnectedLayer::clProgram = NULL;
@@ -58,6 +68,9 @@ cl_kernel FullyConnectedLayer::lastLayerErrorKernel = NULL;
 
 //backpropogateKernel
 cl_kernel FullyConnectedLayer::backpropogateKernel = NULL;
+
+//reduceRowsKernel
+cl_kernel FullyConnectedLayer::reduceRowsKernel = NULL;
 	
 void FullyConnectedLayer::Init()
 {	
@@ -103,6 +116,9 @@ void FullyConnectedLayer::Init()
 	
 	//backpropogate kernel
 	backpropogateKernel = clCreateKernel(clProgram, "BackpropogateKernel", &err);
+	
+	//reduceRows kernel
+	reduceRowsKernel = clCreateKernel(clProgram, "ReduceRowsKernel", &err);
 }	
 	
 	
@@ -343,19 +359,30 @@ void FullyConnectedLayer::AdjustWeightsBiases()
 		cl_int err;
 		float learningRate = 0.01;
 		
-		//multiply error by transposed activation of the previous layer
+		//multiply error by transposed activation of the previous layer subtract learningRate fraction from weights 
 		int M = layerSize; //rows of matrix A
 		int N = layerThickness; //cols of matrix B
 		int K = inputNumber; //cols of matrix A and rows of matrix B
 		int lda = M;
 		int ldb = K;
 		int ldc = M;
-        err = clblasSgemm(clblasColumnMajor, clblasNoTrans, clblasTrans, //USE add C TO DO THE DELTA ADD TO WEIGHTS BY LEARNING RATE
+        err = clblasSgemm(clblasColumnMajor, clblasNoTrans, clblasTrans, //USE INCREMENT C TO DO THE DELTA ADD TO WEIGHTS BY LEARNING RATE
                           M, N, K,
-                          1, error, 0, lda,
-                          prvL->output, 0, ldb, learningRate,
+                          -learningRate, error, 0, lda,
+                          prvL->output, 0, ldb, 1,
                           weights, 0, ldc,
                           1, &clEnvironment->queue, 0, NULL, &event );//column major order gemm, multiply input by weights and adds biases in one step
+		err = clWaitForEvents(1, &event);
+		
+		//sum the errors for each training example, sum errors across the thickness (reduce the row) (sum up to make nx1 matrix), and multiply by learning rate
+		err = clSetKernelArg(reduceRowsKernel, 0, sizeof(cl_mem), (void *)&biases);
+		err = clSetKernelArg(reduceRowsKernel, 1, sizeof(cl_mem), (void *)&error);
+		err = clSetKernelArg(reduceRowsKernel, 2, sizeof(float), (void *)&learningRate);
+		err = clSetKernelArg(reduceRowsKernel, 3, sizeof(int), &layerSize);
+		err = clSetKernelArg(reduceRowsKernel, 4, sizeof(int), &layerThickness);
+		size_t global_item_size = layerSize;
+		size_t local_item_size = 1;
+		err = clEnqueueNDRangeKernel(clEnvironment->queue, reduceRowsKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
 		err = clWaitForEvents(1, &event);
 	}
 }

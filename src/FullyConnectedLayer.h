@@ -23,6 +23,7 @@ public:
 	static cl_kernel activationKernel;	
 	static cl_kernel lastLayerErrorKernel;		
 	static cl_kernel backpropogateKernel;
+	static cl_kernel reduceRowsKernel;
 
 	
 	static void Init();
