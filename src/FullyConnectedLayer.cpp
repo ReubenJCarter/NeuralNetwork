@@ -227,6 +227,7 @@ void FullyConnectedLayer::Allocate()
 		output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
 		biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
 		weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
+		error = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
 		
 		isMemoryAllocated = true; 
 	}
@@ -250,10 +251,6 @@ void FullyConnectedLayer::Allocate()
 	
 void FullyConnectedLayer::ComputeForward()
 {	
-	if(!isMemoryAllocated)
-		Allocate();
-
-	
 	if(PrevLayer()->type == "FullyConnectedLayer" || PrevLayer()->type == "InputLayer")
 	{	
 		cl_event event = NULL;
