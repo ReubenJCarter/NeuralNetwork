@@ -36,6 +36,7 @@ class MNISTImageFile
 		int GetHeight();
 		bool GetImageData(int imageIndex, std::vector<uint8_t>& data);
 		bool GetImageData(int imageIndex, void* data);
+		bool GetImageDataAsFloat(int imageIndex, void* data);
 		bool Close();
 };
 

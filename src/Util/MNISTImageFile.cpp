@@ -92,6 +92,21 @@ bool MNISTImageFile::GetImageData(int imageIndex, void* data)
 	return true;
 }
 
+bool MNISTImageFile::GetImageDataAsFloat(int imageIndex, void* dataFloat)
+{
+	if(!isOpen)
+		return false;	
+	
+	std::vector<uint8_t> data(width * height); 
+	fileS.seekg(sizeof(uint32_t) * 4 + imageIndex * width * height, std::ios::beg);
+	fileS.read((char*)&data[0], width * height);
+	
+	for(int i = 0; i < width * height; i++)
+		((float*)dataFloat)[i] = ((float)data[i]) / 255.0;
+	
+	return true;
+}
+
 bool MNISTImageFile::Close()
 {
 	if(isOpen)

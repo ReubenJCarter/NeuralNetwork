@@ -243,7 +243,8 @@ void FullyConnectedLayer::Allocate()
 		output = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
 		biases = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * sizeof(float), NULL, &err);
 		weights = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * inputNumber * sizeof(float), NULL, &err);
-		
+		error = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
+
 		isMemoryAllocated = true; 
 	}
 }	
@@ -319,20 +320,23 @@ void FullyConnectedLayer::Backpropogate()
 		cl_event event = NULL;
 		cl_int err;
 		
-		//compute the transpose of the next layers weights matrix multiplied by the next layers error
-		int M = layerSize; //rows of matrix A
-		int N = layerThickness; //cols of matrix B
-		int K = inputNumber; //cols of matrix A and rows of matrix B
-		int lda = M;
-		int ldb = K;
-		int ldc = M;
-        err = clblasSgemm(clblasColumnMajor, clblasTrans, clblasNoTrans, ///GET RID OF MULTIPLY CY C ON THIS
+		//fixup This is from a documataion of SGEMM
+		int M = nxtL->inputNumber; //Specifies the number of rows of the matrix AT and of the matrix C. The value of m must be at least zero.
+		int N = nxtL->layerThickness; //Specifies the number of columns of the matrix B and the number of columns of the matrix C.
+		int K = nxtL->layerSize; //Specifies the number of columns of the matrix AT and the number of rows of the matrix B
+	
+		int lda = K;//This is number of rows of next layers weights matrix (not transposed)
+		int ldb = K;//this is num of rows of next layer error
+		int ldc = M;//This is the number of rows of error, which is this layers Size 
+		
+		err = clblasSgemm(clblasColumnMajor, clblasTrans, clblasNoTrans, 
                           M, N, K,
                           1, nxtL->weights, 0, lda,
                           nxtL->error, 0, ldb, 0,
                           error, 0, ldc,
                           1, &clEnvironment->queue, 0, NULL, &event );//column major order gemm, multiply input by weights and adds biases in one step
 		err = clWaitForEvents(1, &event);
+		
 		
 		//hadamard product between the result and deltaActivation(weightedSum (this layers) )
 		err = clSetKernelArg(backpropogateKernel, 0, sizeof(cl_mem), (void *)&error);
