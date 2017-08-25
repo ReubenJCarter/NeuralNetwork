@@ -2,6 +2,7 @@
 #include "InputLayer.h"
 	
 #include "Util/CommonCLSrc.h"
+#include "Util/CommonCLSrc.h"
 	
 #include <clBLAS.h>
 	
@@ -107,18 +108,23 @@ void FullyConnectedLayer::Init()
 	
 	//ActivationFunction
 	activationKernel = clCreateKernel(clProgram, "ActivationKernel", &err);
+	if(err != CL_SUCCESS) std::cerr << "Init:activationKernel:"<< CLHelper::GetClErrorString(err) << std::endl;
 	
 	//copy bias kernel
 	copyBiasesKernel = clCreateKernel(clProgram, "CopyBiasesKernel", &err);
+	if(err != CL_SUCCESS) std::cerr << "Init:copyBiasesKernel:"<< CLHelper::GetClErrorString(err) << std::endl;
 	
 	//last layer kernel
 	lastLayerErrorKernel = clCreateKernel(clProgram, "LastLayerErrorKernel", &err);
+	if(err != CL_SUCCESS) std::cerr << "Init:lastLayerErrorKernel:"<< CLHelper::GetClErrorString(err) << std::endl;
 	
 	//backpropogate kernel
 	backpropogateKernel = clCreateKernel(clProgram, "BackpropogateKernel", &err);
+	if(err != CL_SUCCESS) std::cerr << "Init:backpropogateKernel:"<< CLHelper::GetClErrorString(err) << std::endl;
 	
 	//reduceRows kernel
 	reduceRowsKernel = clCreateKernel(clProgram, "ReduceRowsKernel", &err);
+	if(err != CL_SUCCESS) std::cerr << "Init:reduceRowsKernel:"<< CLHelper::GetClErrorString(err) << std::endl;
 }	
 	
 	
@@ -132,6 +138,9 @@ FullyConnectedLayer::FullyConnectedLayer()
 	
 	//set default cost function type
 	costType = QUADRATIC;
+	
+	//Default learning rate
+	learningRate = 0.1;
 }	
 	
 FullyConnectedLayer::~FullyConnectedLayer()
@@ -174,7 +183,9 @@ void FullyConnectedLayer::RandomizeWeights(double wmin, double wmax, double bmin
 	//write the random weights and biases to the openCL device memory
 	cl_int err;
 	err = clEnqueueWriteBuffer(clEnvironment->queue, weights, CL_TRUE, 0, layerSize * inputNumber * sizeof(float), &weightBuf[0], 0, NULL, NULL);
+	if(err != CL_SUCCESS) std::cerr << "RandomizeWeights:clEnqueueWriteBuffer weights:"<< CLHelper::GetClErrorString(err) << std::endl;
 	err = clEnqueueWriteBuffer(clEnvironment->queue, biases, CL_TRUE, 0, layerSize * sizeof(float), &biasBuf[0], 0, NULL, NULL);
+	if(err != CL_SUCCESS) std::cerr << "RandomizeWeights:clEnqueueWriteBuffer biases:"<< CLHelper::GetClErrorString(err) << std::endl;
 }	
 	
 	
@@ -183,6 +194,15 @@ void FullyConnectedLayer::ReadOutput(float* buffer)
 	//read the output buffer from opencl
 	cl_int err;
 	err = clEnqueueReadBuffer(clEnvironment->queue, output, CL_TRUE, 0, layerSize * layerThickness * sizeof(float), buffer, 0, NULL, NULL);
+	if(err != CL_SUCCESS) std::cerr << "ReadOutput:ReadOutput:"<< CLHelper::GetClErrorString(err) << std::endl;
+}	
+
+void FullyConnectedLayer::ReadError(float* buffer)
+{	
+	//read the output buffer from opencl
+	cl_int err;
+	err = clEnqueueReadBuffer(clEnvironment->queue, error, CL_TRUE, 0, layerSize * layerThickness * sizeof(float), buffer, 0, NULL, NULL);
+	if(err != CL_SUCCESS) std::cerr << "ReadOutput:ReadOutput:"<< CLHelper::GetClErrorString(err) << std::endl;
 }	
 
 
@@ -197,6 +217,8 @@ void FullyConnectedLayer::ComputeOutputError(float* trainExamplesBuffer)
 	cl_mem trainExamples = clCreateBuffer(clEnvironment->ctx, CL_MEM_READ_WRITE, layerSize * layerThickness * sizeof(float), NULL, &err);
 	err = clEnqueueWriteBuffer(clEnvironment->queue, trainExamples, CL_TRUE, 0, layerSize * layerThickness * sizeof(float), trainExamplesBuffer, 0, NULL, NULL);
 	
+	if(err != CL_SUCCESS) std::cerr << "ComputeOutputError:clEnqueueWriteBuffer:"<< CLHelper::GetClErrorString(err) << std::endl;
+	
 	//run the last layer error kernel
 	err = clSetKernelArg(lastLayerErrorKernel, 0, sizeof(cl_mem), (void *)&error);
 	err = clSetKernelArg(lastLayerErrorKernel, 1, sizeof(cl_mem), (void *)&output);
@@ -207,6 +229,9 @@ void FullyConnectedLayer::ComputeOutputError(float* trainExamplesBuffer)
 	size_t global_item_size = layerSize * layerThickness;
 	size_t local_item_size = 1;
 	err = clEnqueueNDRangeKernel(clEnvironment->queue, lastLayerErrorKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+
+	if(err != CL_SUCCESS) std::cerr << "ComputeOutputError:clEnqueueNDRangeKernel:"<< CLHelper::GetClErrorString(err) << std::endl;
+
 	err = clWaitForEvents(1, &event);
 	
 	//Release trainExampel memory
@@ -279,6 +304,9 @@ void FullyConnectedLayer::ComputeForward()
 		size_t global_item_size = layerSize;
 		size_t local_item_size = 1;
 		err = clEnqueueNDRangeKernel(clEnvironment->queue, copyBiasesKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+		
+		if(err != CL_SUCCESS) std::cerr << "ComputeForward:clEnqueueNDRangeKernel:"<< CLHelper::GetClErrorString(err) << std::endl;
+		
 		err = clWaitForEvents(1, &event);
 		
 		//Compute weighted input from inputs and weights and biasses z = w * i + b, temmp store in output
@@ -294,6 +322,9 @@ void FullyConnectedLayer::ComputeForward()
                           input, 0, ldb, 1,
                           weightedSum, 0, ldc,
                           1, &clEnvironment->queue, 0, NULL, &event );//column major order gemm, multiply input by weights and adds biases in one step
+						  
+		if(err != CL_SUCCESS) std::cerr << "ComputeForward:clblasSgemm:"<< CLHelper::GetClErrorString(err) << std::endl;
+						  
 		err = clWaitForEvents(1, &event);
 		
 		//compute activation function on weighted input
@@ -305,6 +336,9 @@ void FullyConnectedLayer::ComputeForward()
 		global_item_size = layerSize * layerThickness;
 		local_item_size = 1;
 		err = clEnqueueNDRangeKernel(clEnvironment->queue, activationKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+		
+		if(err != CL_SUCCESS) std::cerr << "ComputeForward:clEnqueueNDRangeKernel:"<< CLHelper::GetClErrorString(err) << std::endl;
+		
 		err = clWaitForEvents(1, &event);
 		
 		//
@@ -335,6 +369,9 @@ void FullyConnectedLayer::Backpropogate()
                           nxtL->error, 0, ldb, 0,
                           error, 0, ldc,
                           1, &clEnvironment->queue, 0, NULL, &event );//column major order gemm, multiply input by weights and adds biases in one step
+						  
+		if(err != CL_SUCCESS) std::cerr << "Backpropogate:clblasSgemm:"<< CLHelper::GetClErrorString(err) << std::endl;
+						  
 		err = clWaitForEvents(1, &event);
 		
 		
@@ -346,33 +383,48 @@ void FullyConnectedLayer::Backpropogate()
 		size_t global_item_size = layerSize * layerThickness;
 		size_t local_item_size = 1;
 		err = clEnqueueNDRangeKernel(clEnvironment->queue, backpropogateKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+		
+		if(err != CL_SUCCESS) std::cerr << "Backpropogate:clEnqueueNDRangeKernel:"<< CLHelper::GetClErrorString(err) << std::endl;
+		
 		err = clWaitForEvents(1, &event);
 	}
 }	
 
 void FullyConnectedLayer::AdjustWeightsBiases()
 {
-	if(PrevLayer()->type == "FullyConnectedLayer")
+	if(PrevLayer()->type == "FullyConnectedLayer" || PrevLayer()->type == "InputLayer")
 	{
-		FullyConnectedLayer* prvL = (FullyConnectedLayer*)PrevLayer();
+		cl_mem prevOutput; 
+		if(PrevLayer()->type == "FullyConnectedLayer")
+		{
+			FullyConnectedLayer* prvL = (FullyConnectedLayer*)PrevLayer();
+			prevOutput = prvL->output;
+		}
+		else if(PrevLayer()->type == "InputLayer")
+		{
+			InputLayer* prvL = (InputLayer*)PrevLayer();
+			prevOutput = prvL->output;
+		}
 		
 		cl_event event = NULL;
 		cl_int err;
-		float learningRate = 0.01;
 		
 		//multiply error by transposed activation of the previous layer subtract learningRate fraction from weights 
-		int M = layerSize; //rows of matrix A
-		int N = layerThickness; //cols of matrix B
-		int K = inputNumber; //cols of matrix A and rows of matrix B
+		int M = layerSize; //rows of matrix A (error this layer)
+		int N = inputNumber; //cols of matrix BT (Output of prev layer T (number of rows of prev layer output (inputNumber) ) ) 
+		int K = layerThickness; //cols of matrix A and rows of matrix BT () 
 		int lda = M;
-		int ldb = K;
+		int ldb = N;
 		int ldc = M;
         err = clblasSgemm(clblasColumnMajor, clblasNoTrans, clblasTrans, //USE INCREMENT C TO DO THE DELTA ADD TO WEIGHTS BY LEARNING RATE
                           M, N, K,
                           -learningRate, error, 0, lda,
-                          prvL->output, 0, ldb, 1,
+                          prevOutput, 0, ldb, 1,
                           weights, 0, ldc,
                           1, &clEnvironment->queue, 0, NULL, &event );//column major order gemm, multiply input by weights and adds biases in one step
+						  
+		if(err != CL_SUCCESS) std::cerr << "AdjustWeightsBiases:clblasSgemm:"<< CLHelper::GetClErrorString(err) << std::endl;
+
 		err = clWaitForEvents(1, &event);
 		
 		//sum the errors for each training example, sum errors across the thickness (reduce the row) (sum up to make nx1 matrix), and multiply by learning rate
@@ -384,6 +436,9 @@ void FullyConnectedLayer::AdjustWeightsBiases()
 		size_t global_item_size = layerSize;
 		size_t local_item_size = 1;
 		err = clEnqueueNDRangeKernel(clEnvironment->queue, reduceRowsKernel, 1, NULL, &global_item_size, &local_item_size, 0, NULL, &event);
+		
+		if(err != CL_SUCCESS) std::cerr << "AdjustWeightsBiases:clEnqueueNDRangeKernel:"<< CLHelper::GetClErrorString(err) << std::endl;
+
 		err = clWaitForEvents(1, &event);
 	}
 }

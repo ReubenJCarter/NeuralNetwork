@@ -2,6 +2,7 @@
 
 
 #include "Util/CommonHeaders.h"
+#include "OpenCLHelper/OpenCLHelper.h"
 #include "BaseLayer.h"
 
 

@@ -97,6 +97,15 @@ int main(int argc, char* argv[])
 	//
 	unsigned int trainingNumber = 50000;
 	unsigned int epochs = 50;
+	
+	std::vector<float> testIn(imageWidth * imageHeight * miniBatchSize, 1);
+	std::vector<float> testOut(10 * miniBatchSize);
+		
+	fcLayer0.learningRate = 0.5; 
+	fcLayer1.learningRate = 0.5; 
+		
+	std::vector<float> errors(imageWidth * imageHeight * miniBatchSize, 1);
+		
 	for(int e = 0; e < epochs; e++)
 	{
 		std::cout << "epoch " << e << std::endl;
@@ -144,22 +153,22 @@ int main(int argc, char* argv[])
 			fcLayer0.AdjustWeightsBiases();
 			//std::cout << "Weights Biases Update" << std::endl;
 			fcLayer1.AdjustWeightsBiases();
+			
 		}
 		
 		//Test
 		std::cout << "Running Tests" << std::endl;
 		unsigned int testNumber = 10000;
 		unsigned int correctNumber = 0;
-		std::vector<float> testIn(imageWidth * imageHeight, 1);
-		std::vector<float> testOut(10);
+		
 		for(unsigned int t = 0; t < testNumber; t++)
 		{
 			
-			std::cout << "Load Test Image Data" << std::endl;
+			//std::cout << "Load Test Image Data" << std::endl;
 			testFile.GetImageDataAsFloat(t, &testIn[0]);
 			
 			//forward propogate
-			std::cout << "Forward Propogate" << std::endl;
+			//std::cout << "Forward Propogate" << std::endl;
 			inputLayer.SetInput(&testIn[0]);
 			inputLayer.ComputeForward();
 			fcLayer0.ComputeForward();

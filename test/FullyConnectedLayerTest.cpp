@@ -33,7 +33,7 @@ void Test0()
 	fcLayer.Allocate();
 	
 	std::cout << "Setting fully connected layer weights and biases" << std::endl;
-	fcLayer.RandomizeWeights(1, 0, 100, 0);
+	fcLayer.RandomizeWeights(1, 0.0000001, 100, 0.0000001);
 	
 	std::cout << "Compute Forward" << std::endl;
 	inputLayer.ComputeForward();
@@ -106,9 +106,9 @@ void Test1()
 	
 	//Set up weights and biases
 	std::cout << "Setting fully connected layers weights and biases" << std::endl;
-	fcLayer0.RandomizeWeights(1, 0, 0, 0);
-	fcLayer1.RandomizeWeights(1, 0, 0, 0);
-	fcLayer2.RandomizeWeights(1, 0, 0, 0);
+	fcLayer0.RandomizeWeights(1, 0.0001, 0, 0.00001);
+	fcLayer1.RandomizeWeights(1, 0.0001, 0, 0.00001);
+	fcLayer2.RandomizeWeights(1, 0.0001, 0, 0.00001);
 	
 	//Forward pass
 	std::cout << "Compute Forward" << std::endl;
@@ -176,9 +176,9 @@ void Test2()
 	
 	//Set up weights and biases
 	std::cout << "Setting fully connected layers weights and biases" << std::endl;
-	fcLayer0.RandomizeWeights(1, 0, 0, 0);
-	fcLayer1.RandomizeWeights(1, 0, 0, 0);
-	fcLayer2.RandomizeWeights(1, 0, 0, 0);
+	fcLayer0.RandomizeWeights(1, 0.0001, 0, 0.0001);
+	fcLayer1.RandomizeWeights(1, 0.0001, 0, 0.0001);
+	fcLayer2.RandomizeWeights(1, 0.0001, 0, 0.0001);
 	
 	//Forward pass
 	std::cout << "Compute Forward" << std::endl;
