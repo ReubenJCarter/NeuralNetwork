@@ -72,9 +72,11 @@ int main(int argc, char* argv[])
 	std::cout << "Creating fully connected layer" << std::endl;
 	FullyConnectedLayer fcLayer0; 
 	fcLayer0.activationType = FullyConnectedLayer::LOGISTIC;
+	fcLayer0.costType = FullyConnectedLayer::CROSS_ENTROPY;
 	fcLayer0.SetSize(15);
 	FullyConnectedLayer fcLayer1; 
 	fcLayer1.activationType = FullyConnectedLayer::LOGISTIC;
+	fcLayer1.costType = FullyConnectedLayer::CROSS_ENTROPY;
 	fcLayer1.SetSize(10);
 	
 	std::cout << "Connecting up layers" << std::endl;
