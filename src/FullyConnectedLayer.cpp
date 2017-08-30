@@ -2,7 +2,6 @@
 #include "InputLayer.h"
 	
 #include "Util/CommonCLSrc.h"
-#include "Util/CommonCLSrc.h"
 	
 #include <clBLAS.h>
 	

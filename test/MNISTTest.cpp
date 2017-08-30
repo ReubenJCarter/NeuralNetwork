@@ -72,11 +72,11 @@ int main(int argc, char* argv[])
 	std::cout << "Creating fully connected layer" << std::endl;
 	FullyConnectedLayer fcLayer0; 
 	fcLayer0.activationType = FullyConnectedLayer::LOGISTIC;
-	fcLayer0.costType = FullyConnectedLayer::CROSS_ENTROPY;
-	fcLayer0.SetSize(15);
+	fcLayer0.costType = FullyConnectedLayer::QUADRATIC;
+	fcLayer0.SetSize(30);
 	FullyConnectedLayer fcLayer1; 
 	fcLayer1.activationType = FullyConnectedLayer::LOGISTIC;
-	fcLayer1.costType = FullyConnectedLayer::CROSS_ENTROPY;
+	fcLayer1.costType = FullyConnectedLayer::QUADRATIC;
 	fcLayer1.SetSize(10);
 	
 	std::cout << "Connecting up layers" << std::endl;
@@ -98,13 +98,13 @@ int main(int argc, char* argv[])
 	//train the network
 	//
 	unsigned int trainingNumber = 50000;
-	unsigned int epochs = 50;
+	unsigned int epochs = 100;
 	
 	std::vector<float> testIn(imageWidth * imageHeight * miniBatchSize, 1);
 	std::vector<float> testOut(10 * miniBatchSize);
 		
-	fcLayer0.learningRate = 0.5; 
-	fcLayer1.learningRate = 0.5; 
+	fcLayer0.learningRate = 0.3; 
+	fcLayer1.learningRate = 0.3; 
 		
 	std::vector<float> errors(imageWidth * imageHeight * miniBatchSize, 1);
 		
@@ -178,9 +178,14 @@ int main(int argc, char* argv[])
 			fcLayer1.ReadOutput(&testOut[0]);
 			
 			int output = -1;
+			float highest = -1000000;
 			for(int i = 0; i < 10; i++)
 			{
-				if(testOut[i] > 0.5) output = i;
+				if(testOut[i] > highest) 
+				{
+					highest = testOut[i];
+					output = i;
+				}
 			}
 			uint8_t label;
 			testLabelFile.GetLabelData(t, label);

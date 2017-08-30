@@ -188,7 +188,7 @@ const std::string activationFunctionsSrc = ""
 "	if(costType == QUADRATIC)"
 "		x = DeltaCostQuadratic(activation, trainExample);"
 
-"	if(costType == CROSS_ENTROPY)"
+"	else if(costType == CROSS_ENTROPY)"
 "		x = DeltaCostCrossEntropy(activation, trainExample);"
 
 "	return x;"
