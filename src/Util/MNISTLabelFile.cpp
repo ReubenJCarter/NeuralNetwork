@@ -2,10 +2,6 @@
 
 #include "FlipBytes.h"
 
-#include <stdint.h>
-#include <iostream>
-#include <fstream>
-
 
 namespace NN
 {	
@@ -23,9 +19,10 @@ namespace Util
 MNISTLabelFile::MNISTLabelFile()
 {
 	isOpen = false;
+	dataPreloaded = false;
 }
 
-bool MNISTLabelFile::Open(const char* fileName)
+bool MNISTLabelFile::Open(const char* fileName, bool preload)
 {
 	if(isOpen)
 		fileS.close();
@@ -48,7 +45,18 @@ bool MNISTLabelFile::Open(const char* fileName)
 	fileS.read((char*)(&labelNumber), sizeof(uint32_t));
 	FilpBytes(&labelNumber, sizeof(uint32_t));
 	
+	dataPreloaded = preload;
+	
 	isOpen = true; 
+	
+	preloadedData.clear();
+	if(dataPreloaded)
+	{
+		preloadedData.resize(labelNumber);
+		fileS.read((char*)&preloadedData[0], labelNumber * sizeof(uint8_t));
+		fileS.close();
+	}
+	
 	return true;
 }
 
@@ -62,8 +70,15 @@ bool MNISTLabelFile::GetLabelData(int labelIndex, uint8_t& data)
 	if(!isOpen)
 		return false;
 	
-	fileS.seekg(sizeof(uint32_t) * 2 + labelIndex, std::ios::beg);
-	fileS.read((char*)&data, sizeof(uint8_t));
+	if(!dataPreloaded)
+	{
+		fileS.seekg(sizeof(uint32_t) * 2 + labelIndex, std::ios::beg);
+		fileS.read((char*)&data, sizeof(uint8_t));
+	}
+	else
+	{
+		data = preloadedData[labelIndex];
+	}
 	return true;
 }
 
@@ -90,11 +105,19 @@ bool MNISTLabelFile::GetLabelData(void* data)
 
 bool MNISTLabelFile::Close()
 {
-	if(isOpen)
+	if(isOpen && !dataPreloaded)
 	{
+		
 		fileS.close();
 		isOpen = false;
 		return true; 
+	}
+	else if(isOpen && dataPreloaded)
+	{
+		isOpen = false;
+		dataPreloaded = false;
+		preloadedData.clear();
+		return true;
 	}
 	return false;
 }

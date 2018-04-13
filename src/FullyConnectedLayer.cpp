@@ -53,6 +53,13 @@ const std::string fullyConnectedLayerSrc = ""
 "		reducedVal += error[i * layerSize + inx];"
 "	bias[inx] -= learningRate * reducedVal;"
 "}"	
+""
+""
+"__kernel void ComputeCostFunction()"
+"{"
+"	"
+"	"
+"}"
 ;
 		
 cl_program FullyConnectedLayer::clProgram = NULL;

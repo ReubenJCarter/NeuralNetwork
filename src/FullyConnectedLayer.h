@@ -53,6 +53,7 @@ public:
 	void RandomizeWeights(double wmin, double wmax, double bmin, double bmax);//need to be allocated before this
 	void ReadOutput(float* buffer);
 	void ReadError(float* buffer);
+	void ComputeCost(float* trainExamplesBuffer);
 	void ComputeOutputError(float* trainExamplesBuffer);
 	virtual void Allocate();//need to be connected before this 
 	virtual void ComputeForward();

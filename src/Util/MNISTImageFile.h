@@ -27,10 +27,12 @@ class MNISTImageFile
 		uint32_t width;
 		std::ifstream fileS;
 		bool isOpen;
+		bool dataPreloaded;
+		std::vector<uint8_t> preloadedData;
 		
 	public:
 		MNISTImageFile();
-		bool Open(const char* fileName);
+		bool Open(const char* fileName, bool preload=true);
 		int GetImageNumber();
 		int GetWidth();
 		int GetHeight();
